@@ -2,6 +2,7 @@
 
 import {
   FileItem,
+  LOCAL_SSH_CONFIG,
   OpenedFile,
   SftpApi,
   SSH_CONFIG,
@@ -33,7 +34,6 @@ interface OpenEditorContextType {
       };
     }>
   >;
-  connect: () => void;
   terminal: {
     [x: string]: Terminal;
   };
@@ -60,6 +60,10 @@ interface OpenEditorContextType {
   updateFile(path: string): Promise<string | undefined>;
   readFile(path: string): Promise<string | undefined>;
   getPathFiles(path: string): Promise<Record<string, FileItem> | undefined>;
+  config: SSH_CONFIG | null;
+  setConfig: React.Dispatch<React.SetStateAction<SSH_CONFIG | null>>;
+  localConfigList: LOCAL_SSH_CONFIG[];
+  setLocalConfigList: React.Dispatch<React.SetStateAction<LOCAL_SSH_CONFIG[]>>;
 }
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
@@ -73,7 +77,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     path: "",
   });
   const [isTerminalVisible, setIsTerminalVisible] = React.useState(false);
-  const [sshConfig, setSshConfig] = React.useState<SSH_CONFIG | null>();
+  const [config, setConfig] = React.useState<SSH_CONFIG | null>(null);
+  const [localConfigList, setLocalConfigList] = React.useState<
+    LOCAL_SSH_CONFIG[]
+  >([]);
   const [isSftpConnected, setIsSftpConnected] = React.useState(false);
   const [currentPath, setCurrentPath] = React.useState("");
   const [items, setItems] = React.useState<Record<string, FileItem>>({});
@@ -94,13 +101,6 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const defaultConfig = {
-    host:process.env.host!,
-    user: process.env.user!,
-    port:Number(process.env.port!),
-    password: process.env.password!,
-  };
-
   function onConnected(processId: number) {
     const term = terminal[processId.toString()];
     setTerminalState((prev) => ({
@@ -116,7 +116,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     term.write(PROMPT);
   }
 
-  const connect = async () => {
+  const connect = async (config: SSH_CONFIG) => {
     const sshApi = (window as any).sshApi as SSHApi;
 
     if (!sshApi) {
@@ -129,13 +129,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     }
     console.log("Connecting ssh...");
     try {
-      await addConnection(defaultConfig);
+      await addConnection(config);
     } catch (error) {
       console.error((error as any).message);
     }
   };
 
-  const connectSftp = async (config = defaultConfig) => {
+  const connectSftp = async (config: SSH_CONFIG) => {
     try {
       if (typeof window === "undefined") {
         return;
@@ -158,7 +158,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  async function addConnection(config: SSH_CONFIG = defaultConfig) {
+  async function addConnection(config: SSH_CONFIG) {
     try {
       if (typeof window === "undefined") {
         throw new Error("Window not defined");
@@ -196,9 +196,12 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     }
   }
   React.useEffect(() => {
-    connect();
-    connectSftp();
-  }, []);
+    if (config) {
+      connect(config);
+
+      connectSftp(config);
+    }
+  }, [config]);
 
   function addTerminal(terminal: Terminal, processId: number) {
     setTerminal((prev) => ({ ...prev, [processId.toString()]: terminal }));
@@ -321,7 +324,6 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     setIsTerminalVisible,
     terminalState,
     setTerminalState,
-    connect,
     addTerminal,
     terminal,
     onConnected,
@@ -334,6 +336,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     getPathFiles,
     readFile,
     updateFile,
+    config,
+    setConfig,
+    localConfigList,
+    setLocalConfigList,
   };
 
   return (

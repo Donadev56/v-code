@@ -29,7 +29,7 @@ import { useTerminalDialog } from "@/hooks/useDialog";
 import { EnterPathDialog } from "@/components/terminal_inputs";
 import { TerminalsView } from "@/components/terminal_view";
 import { NodeApi } from "react-arborist";
-import { TranslateY } from "@/components/translate";
+import { TranslateX, TranslateY } from "@/components/translate";
 import { Button } from "@/components/ui/button";
 import { FaMinus } from "react-icons/fa";
 import { RiExpandUpDownFill } from "react-icons/ri";
@@ -134,7 +134,6 @@ export const EditorPage = () => {
       toast.error((error as any)?.message ?? String(error));
     }
   }
-
   const openFile = async (node: NodeApi<FileItem>) => {
     try {
       const item = node.data;
@@ -177,20 +176,22 @@ export const EditorPage = () => {
           // direction="horizontal"
           className="w-full h-full   border "
         >
-          <Panel defaultSize={180}>
-            <div className="w-full py-4">
-              <div className="flex text-sm p-4 py-3 overflow-x-scroll">
-                Explorer
-              </div>
+          <TranslateX condition={Object.values(items).length > 0}>
+            <Panel defaultSize={180}>
+              <div className="w-full py-4">
+                <div className="flex text-sm p-4 py-3 overflow-x-scroll">
+                  Explorer
+                </div>
 
-              <FileExplorer
-                currentFile={focusedFile}
-                items={items}
-                onOpen={openFile}
-              />
-            </div>
-          </Panel>
-          <Separator className="h-full w-0.5 bg-border" />
+                <FileExplorer
+                  currentFile={focusedFile}
+                  items={items}
+                  onOpen={openFile}
+                />
+              </div>
+            </Panel>
+            <Separator className="h-full w-0.5 bg-border" />
+          </TranslateX>
 
           <Panel minSize={"30%"}>
             <div className="w-full relative h-full">

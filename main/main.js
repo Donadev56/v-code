@@ -5,7 +5,7 @@ const { ipcMain } = require("electron");
 const Client = require("ssh2-sftp-client");
 const { sshManager } = require("./sshManager");
 const { sftpManager } = require("./sftpManager");
-
+const { storageManager } = require("./localStorage");
 const appServe = app.isPackaged
   ? serve({
       directory: path.join(__dirname, "../out"),
@@ -89,6 +89,87 @@ ipcMain.handle("sftp:read_file", async (_, path) => {
 
 ipcMain.handle("sftp:isConnected", async () => {
   return sftpManager.isConnected;
+});
+
+ipcMain.handle("storage:saveData", (event, filename, data) => {
+  try {
+    storageManager.saveData(filename, data);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle("storage:readData", (event, filename) => {
+  try {
+    const data = storageManager.readData(filename);
+    return { success: true, data };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle("storage:deleteData", (event, filename) => {
+  try {
+    storageManager.deleteData(filename);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle("storage:exists", (event, filename) => {
+  try {
+    const exists = storageManager.exists(filename);
+    return { success: true, exists };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle("storage:listFiles", () => {
+  try {
+    const files = storageManager.listFiles();
+    return { success: true, files };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle("storage:setKey", (event, key, value) => {
+  try {
+    storageManager.setKey(key, value);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle("storage:getKey", (event, key, defaultValue) => {
+  try {
+    const value = storageManager.getKey(key, defaultValue);
+    return { success: true, value };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle("storage:deleteKey", (event, key) => {
+  try {
+    storageManager.deleteKey(key);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle("storage:clearStore", () => {
+  try {
+    storageManager.clearStore();
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 });
 
 app.on("ready", () => {

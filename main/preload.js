@@ -37,3 +37,56 @@ contextBridge.exposeInMainWorld("windowAPI", {
   maximize: () => ipcRenderer.send("maximize"),
   close: () => ipcRenderer.send("close"),
 });
+
+contextBridge.exposeInMainWorld("electronStorage", {
+  saveData: async (filename, data) => {
+    const result = await ipcRenderer.invoke("storage:saveData", filename, data);
+    if (!result.success) throw new Error(result.error);
+    return true;
+  },
+  readData: async (filename) => {
+    const result = await ipcRenderer.invoke("storage:readData", filename);
+    if (!result.success) throw new Error(result.error);
+    return result.data;
+  },
+  deleteData: async (filename) => {
+    const result = await ipcRenderer.invoke("storage:deleteData", filename);
+    if (!result.success) throw new Error(result.error);
+    return true;
+  },
+  exists: async (filename) => {
+    const result = await ipcRenderer.invoke("storage:exists", filename);
+    if (!result.success) throw new Error(result.error);
+    return result.exists;
+  },
+  listFiles: async () => {
+    const result = await ipcRenderer.invoke("storage:listFiles");
+    if (!result.success) throw new Error(result.error);
+    return result.files;
+  },
+
+  setKey: async (key, value) => {
+    const result = await ipcRenderer.invoke("storage:setKey", key, value);
+    if (!result.success) throw new Error(result.error);
+    return true;
+  },
+  getKey: async (key, defaultValue = null) => {
+    const result = await ipcRenderer.invoke(
+      "storage:getKey",
+      key,
+      defaultValue,
+    );
+    if (!result.success) throw new Error(result.error);
+    return result.value;
+  },
+  deleteKey: async (key) => {
+    const result = await ipcRenderer.invoke("storage:deleteKey", key);
+    if (!result.success) throw new Error(result.error);
+    return true;
+  },
+  clearStore: async () => {
+    const result = await ipcRenderer.invoke("storage:clearStore");
+    if (!result.success) throw new Error(result.error);
+    return true;
+  },
+});
