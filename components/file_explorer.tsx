@@ -28,32 +28,48 @@ interface FileExplorerProps {
   onOpen: (node: NodeApi<FileItem>) => void;
   items: Record<string, FileItem>;
   currentFile: OpenedFile;
+  onOpenDir: (node: NodeApi<FileItem>) => void;
 }
 
 export const FileExplorer = ({
   onOpen,
   items,
+  onOpenDir,
   currentFile,
 }: FileExplorerProps) => {
   const data = React.useMemo(() => buildTree(items), [items]);
 
   return (
-    <Tree
-      data={data}
-      openByDefault={false}
-      width="100%"
-      height={600}
-      indent={18}
-      rowHeight={36}
-      onSelect={(nodes) => {
-        const node = nodes[0];
-        if (node && !node.data.isFolder) {
-          onOpen(node);
-        }
+    <div
+      style={{
+        maxHeight: "calc(100svh - 75px)",
+        minHeight: "calc(100svh - 75px)",
       }}
+      className="w-full full  overflow-y-scroll"
     >
-      {Node}
-    </Tree>
+      <Tree
+        paddingBottom={40}
+        data={data}
+        openByDefault={false}
+        width="100%"
+        indent={18}
+        height={1000}
+        rowHeight={30}
+        onSelect={(nodes) => {
+          const node = nodes[0];
+          if (node && !node.data.isFolder) {
+            onOpen(node);
+          } else {
+            if (!node?.isOpen) {
+              return;
+            }
+            onOpenDir(node);
+          }
+        }}
+      >
+        {Node}
+      </Tree>
+    </div>
   );
 };
 function Node({ node, style, dragHandle }: NodeRendererProps<any>) {
@@ -72,8 +88,8 @@ function Node({ node, style, dragHandle }: NodeRendererProps<any>) {
         " focus:bg-primary/20 cursor-pointer px-2 py-0.5 focus:border-primary ",
       )}
     >
-      <NodeIcon size={17} node={node} />
-      <div className="text-sm">{node.data.name}</div>
+      <NodeIcon size={15} node={node} />
+      <div className="text-[14px]">{node.data.name}</div>
     </div>
   );
 }

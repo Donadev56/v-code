@@ -81,6 +81,7 @@ interface OpenEditorContextType {
       };
     }>
   >;
+  updateFolder(path: string): Promise<void>;
 }
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
@@ -108,9 +109,6 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = React.useState<Record<string, FileItem>>({});
   const [isLoading, setIsLoading] = React.useState(false);
   const sftpRef = React.useRef<SftpApi | null>(null);
-  console.log({ items });
-  console.log(localConfig);
-  console.log({ currentPath });
 
   const [terminalState, setTerminalState] = useState<{
     [x: string]: {
@@ -438,7 +436,15 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       if (!sftp) {
         return;
       }
-      const data = await sftp.list(path);
+      let data = await sftp.list(path);
+
+      const sortedData = [...data].sort((a, b) => {
+        if (a.type === "d" && b.type !== "d") return -1;
+        if (a.type !== "d" && b.type === "d") return 1;
+
+        return a.name.localeCompare(b.name);
+      });
+      data = sortedData;
       const files: Record<string, FileItem> = {};
 
       if (data) {
@@ -466,6 +472,44 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error(error);
       toast.error((error as any)?.message ?? String(error));
+    }
+  }
+
+  async function updateFolder(path: string) {
+    const file = Object.values(items).find((e) => e.data.path === path);
+    if (!file?.children || file?.children?.length === 0) {
+      setIsLoading(true);
+    }
+
+    try {
+      const files = await getPathFiles(path);
+      if (files) {
+        const children = files["root"].children;
+        delete files["root"];
+        console.log({ files, children });
+
+        setItems((prev) => {
+          if (file) {
+            return {
+              ...prev,
+              ...files,
+              [file.name]: {
+                ...prev[file.name],
+                children,
+              },
+            };
+          } else {
+            console.log("File not found");
+          }
+
+          return prev;
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error((error as any)?.message ?? String(error));
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -498,6 +542,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     connectServer,
     isLoading,
     setIsLoading,
+    updateFolder,
   };
 
   return (

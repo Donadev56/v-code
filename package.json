@@ -37,6 +37,7 @@
     "react-icons": "^5.5.0",
     "react-resizable-panels": "^4.1.1",
     "react-terminal-ui": "^1.4.0",
+    "react-virtuoso": "^4.18.1",
     "react-xtermjs": "^1.0.10",
     "sonner": "^2.0.7",
     "ssh2-sftp-client": "^12.0.1",

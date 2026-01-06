@@ -57,6 +57,7 @@ export const EditorPage = () => {
     config,
     localConfig,
     items,
+    updateFolder,
   } = useOpenEditor();
   const [currentTerminalId, setCurrentTerminalId] = React.useState(0);
   const [isVisible, setVisible] = React.useState(false);
@@ -172,6 +173,20 @@ export const EditorPage = () => {
       console.error(error);
     }
   };
+  const onOpenDir = async (node: NodeApi<FileItem>) => {
+    try {
+      const item = node.data;
+
+      console.log(item);
+      if (!item.data.path) {
+        throw new Error("Path not defined");
+      }
+
+      await updateFolder(item.data.path);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <div className="flex relative w-full flex-col items-center h-svh  ">
@@ -200,6 +215,7 @@ export const EditorPage = () => {
                   </div>
 
                   <FileExplorer
+                    onOpenDir={onOpenDir}
                     currentFile={focusedFile}
                     items={items}
                     onOpen={openFile}

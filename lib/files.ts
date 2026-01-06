@@ -122,83 +122,82 @@ export const FileIcons: Record<string, IconType> = {
 
 export const FileColors: Record<string, string> = {
   // Web technologies
-  html: "oklch(0.6423 0.2121 35.34)", // Orange
-  css: "oklch(0.55 0.22 262)", // Blue
-  scss: "oklch(0.65 0.18 330)", // Pink
-  sass: "oklch(0.65 0.18 330)", // Pink
-  less: "oklch(0.55 0.22 262)", // Blue
+  html: "oklch(0.68 0.18 35)", // Warm coral orange
+  css: "oklch(0.63 0.16 260)", // Soft periwinkle blue
+  scss: "oklch(0.68 0.14 330)", // Gentle pink
+  sass: "oklch(0.68 0.14 330)", // Gentle pink
+  less: "oklch(0.63 0.16 260)", // Soft periwinkle blue
 
   // JavaScript/TypeScript ecosystem
-  js: "oklch(0.91 0.17 98)", // Yellow
-  jsx: "oklch(0.91 0.17 98)", // Yellow
-  ts: "oklch(0.52 0.1825 247.63)", // Blue
-  tsx: "oklch(0.52 0.1825 247.63)", // Blue
-  mjs: "oklch(0.91 0.17 98)", // Yellow
-  cjs: "oklch(0.91 0.17 98)", // Yellow
+  js: "oklch(0.85 0.18 95)", // Warm honey yellow
+  jsx: "oklch(0.85 0.18 95)", // Warm honey yellow
+  ts: "oklch(0.60 0.16 245)", // Softer sky blue
+  tsx: "oklch(0.60 0.16 245)", // Softer sky blue
+  mjs: "oklch(0.85 0.18 95)", // Warm honey yellow
+  cjs: "oklch(0.85 0.18 95)", // Warm honey yellow
 
   // Frontend frameworks
-  vue: "oklch(0.55 0.13 160)", // Green
-  svelte: "oklch(0.65 0.18 15)", // Orange
-  angular: "oklch(0.75 0.25 15)", // Red
+  vue: "oklch(0.70 0.15 160)", // Mint green
+  svelte: "oklch(0.72 0.16 20)", // Soft coral
+  angular: "oklch(0.68 0.18 15)", // Warm terra cotta
 
   // Configuration files
-  json: "oklch(0.85 0.12 90)", // Light yellow
-  yaml: "oklch(0.65 0.10 200)", // Light blue
-  yml: "oklch(0.65 0.10 200)", // Light blue
-  toml: "oklch(0.70 0.12 280)", // Purple
-  env: "oklch(0.60 0.15 150)", // Green
-  gitignore: "oklch(0.40 0.10 0)", // Dark gray
-  dockerfile: "oklch(0.55 0.18 240)", // Blue
+  json: "oklch(0.82 0.12 85)", // Pale goldenrod
+  yaml: "oklch(0.72 0.12 200)", // Soft seafoam
+  yml: "oklch(0.72 0.12 200)", // Soft seafoam
+  toml: "oklch(0.68 0.14 280)", // Lavender
+  env: "oklch(0.70 0.14 140)", // Sage green
+  gitignore: "oklch(0.3618 0.111 0)", // Charcoal gray
+  dockerfile: "oklch(0.65 0.14 235)", // Denim blue
 
   // Backend languages
-  py: "oklch(0.65 0.20 100)", // Blue
-  java: "oklch(0.65 0.22 30)", // Red/Orange
-  php: "oklch(0.55 0.25 300)", // Purple
-  go: "oklch(0.60 0.18 200)", // Cyan
-  rs: "oklch(0.75 0.15 30)", // Orange/Brown
-  rb: "oklch(0.70 0.25 0)", // Red
-  swift: "oklch(0.70 0.22 40)", // Orange
-  kt: "oklch(0.60 0.25 260)", // Purple
+  py: "oklch(0.70 0.14 200)", // Azure blue
+  java: "oklch(0.68 0.16 30)", // Burnt orange
+  php: "oklch(0.65 0.18 300)", // Lilac purple
+  go: "oklch(0.70 0.16 195)", // Aqua cyan
+  rs: "oklch(0.75 0.12 25)", // Peach
+  rb: "oklch(0.72 0.18 355)", // Soft ruby
+  swift: "oklch(0.74 0.18 35)", // Apricot
+  kt: "oklch(0.65 0.20 275)", // Orchid
 
   // C-family languages
-  c: "oklch(0.55 0.20 250)", // Blue
-  cpp: "oklch(0.55 0.20 250)", // Blue
-  cs: "oklch(0.60 0.25 320)", // Purple
-  h: "oklch(0.55 0.20 250)", // Blue
-  hpp: "oklch(0.55 0.20 250)", // Blue
+  c: "oklch(0.65 0.16 250)", // Steel blue
+  cpp: "oklch(0.65 0.16 250)", // Steel blue
+  cs: "oklch(0.68 0.18 320)", // Soft magenta
+  h: "oklch(0.65 0.16 250)", // Steel blue
+  hpp: "oklch(0.65 0.16 250)", // Steel blue
 
   // Blockchain
-  sol: "oklch(0.62 0.19 260)", // Purple
+  sol: "oklch(0.68 0.16 265)", // Amethyst
 
   // Documentation
-  md: "oklch(0.70 0.15 250)", // Blue
-  mdx: "oklch(0.70 0.15 250)", // Blue
-  txt: "oklch(0.70 0.05 0)", // Gray
-  pdf: "oklch(0.75 0.25 20)", // Red
+  md: "oklch(0.72 0.12 245)", // Powder blue
+  mdx: "oklch(0.72 0.12 245)", // Powder blue
+  txt: "oklch(0.75 0.04 0)", // Light charcoal
+  pdf: "oklch(0.72 0.18 20)", // Salmon pink
 
   // Build tools & configs
-  tsconfig: "oklch(0.52 0.1825 247.63)", // TypeScript blue
-  package: "oklch(0.50 0.20 130)", // Green
-  lock: "oklch(0.40 0.05 0)", // Dark gray
+  tsconfig: "oklch(0.60 0.16 245)", // Consistent with TS
+  package: "oklch(0.70 0.18 135)", // Emerald green
+  lock: "oklch(0.55 0.04 0)", // Charcoal gray
 
   // Database
-  sql: "oklch(0.55 0.18 220)", // Blue
-  db: "oklch(0.55 0.18 220)", // Blue
+  sql: "oklch(0.65 0.14 220)", // Cerulean
+  db: "oklch(0.65 0.14 220)", // Cerulean
 
   // Testing
-  test: "oklch(0.70 0.20 90)", // Red/Coral
-  spec: "oklch(0.70 0.20 90)", // Red/Coral
+  test: "oklch(0.72 0.16 90)", // Coral pink
+  spec: "oklch(0.72 0.16 90)", // Coral pink
 
   // GraphQL
-  gql: "oklch(0.65 0.22 320)", // Pink
-  graphql: "oklch(0.65 0.22 320)", // Pink
+  gql: "oklch(0.70 0.18 325)", // Blush pink
+  graphql: "oklch(0.70 0.18 325)", // Blush pink
 
   // Default fallbacks
-  default: "oklch(0.70 0.05 0)", // Gray
-  folder: "oklch(0.80 0.12 90)", // Yellow
-  folderOpen: "oklch(0.80 0.12 90)", // Yellow
+  default: "oklch(0.75 0.04 0)", // Light charcoal
+  folder: "oklch(0.82 0.12 95)", // Pale honey
+  folderOpen: "oklch(0.82 0.12 95)", // Pale honey
 };
-
 // Helper function to get icon for a filename
 export const getFileIcon = (filename: string): IconType => {
   const extension = filename.split(".").pop()?.toLowerCase() || "default";
