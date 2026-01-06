@@ -36,7 +36,6 @@ function getFileIcon(fileName: string) {
 interface FileExplorerProps {
   onOpen: (node: NodeApi<FileItem>) => void;
   items: Record<string, FileItem>;
-  currentFile: OpenedFile;
   onOpenDir: (node: NodeApi<FileItem>) => void;
 }
 
@@ -44,7 +43,6 @@ export const FileExplorer = ({
   onOpen,
   items,
   onOpenDir,
-  currentFile,
 }: FileExplorerProps) => {
   const data = React.useMemo(() => buildTree(items), [items]);
 
@@ -81,7 +79,7 @@ export const FileExplorer = ({
 };
 function Node({ node, style, dragHandle }: NodeRendererProps<FileItem>) {
   const { focusedFile } = useOpenEditor();
-  const isCurrent = focusedFile.path === node.data.data.path;
+  const isCurrent = focusedFile?.path === node.data.data.path;
   const indent = node.level == 0 ? "16px" : 24 * node.level;
 
   return (
@@ -145,5 +143,3 @@ export function NodeIcon({
     return <FileIcon size={size} filePath={node.data.data.path} />;
   }
 }
-
-

@@ -1,4 +1,4 @@
-import { CodeEditor } from "@/components/editor";
+import { CodeEditor } from "@/components/editor-main/editor";
 import EditorPage from "./(pages)/editor/page";
 import {
   getIconForFilePath,

@@ -1,6 +1,6 @@
 "use client";
 
-import { CodeEditor } from "@/components/editor";
+import { CodeEditor } from "@/components/editor-main/editor";
 import { FileExplorer } from "@/components/file_explorer";
 import Group from "@/components/ui/group";
 import { useOpenEditor } from "@/hooks/useOpenEditor";
@@ -10,9 +10,9 @@ import {
   GetExtension,
   GetMonacoLanguage,
 } from "@/lib/files";
-import { cn, getKeyFromConfig } from "@/lib/utils";
-import { FileItem, OpenedFile } from "@/types/types";
-import {  PlusIcon, SearchIcon, Trash2, X } from "lucide-react";
+import { cn, getKeyFromConfig, isImage } from "@/lib/utils";
+import { buf, FileContent, FileItem, OpenedFile } from "@/types/types";
+import { PlusIcon, SearchIcon, Trash2, X } from "lucide-react";
 import React from "react";
 import { Panel, Separator } from "react-resizable-panels";
 import { AiTwotoneCode } from "react-icons/ai";
@@ -34,12 +34,12 @@ import { useEditorDialog } from "@/hooks/useDialog";
 import { EditorBottomView } from "@/components/editor_bottom_view";
 import { EditorConfigPathsListView } from "@/components/editor_config_paths_view";
 import FileIcon from "@/components/ui/file_icon";
+import { BiError } from "react-icons/bi";
+import { ImageViewer } from "@/components/editor-main/image_viewer";
+import { EditorSpaceRenderer } from "@/components/editor-main/space_renderer";
+import { fromString } from "uint8arrays/from-string";
 
 export default function EditorPage() {
-  const [openedFiles, setOpenedFiles] = React.useState<{
-    [name: string]: OpenedFile;
-  }>({});
-
   const {
     focusedFile,
     setFocusedFile,
@@ -59,6 +59,8 @@ export default function EditorPage() {
     localConfig,
     items,
     updateFolder,
+    openedFiles,
+    setOpenedFiles,
   } = useOpenEditor();
   const [currentTerminalId, setCurrentTerminalId] = React.useState(0);
   const [isVisible, setVisible] = React.useState(false);
@@ -94,7 +96,7 @@ export default function EditorPage() {
       return rest;
     });
 
-    setFocusedFile({ name: "", content: "", path: "/" });
+    setFocusedFile({ name: "", content: buf, path: "/" });
     if (Object.values(rest).length === 0) {
       return;
     }
@@ -106,7 +108,18 @@ export default function EditorPage() {
   }
 
   function updateFileContent(newValue: string | undefined) {
-    setFocusedFile((prev) => ({ ...prev, content: newValue || "" }));
+    setFocusedFile((prev) => {
+      if (!prev) {
+        return null;
+      }
+      if (!newValue) {
+        return prev;
+      }
+      return {
+        ...prev,
+        content: fromString(newValue, "utf-8"),
+      };
+    });
   }
 
   async function addTerm() {
@@ -150,26 +163,29 @@ export default function EditorPage() {
     try {
       const item = node.data;
 
-      console.log(item);
       if (!item.data.path) {
         throw new Error("Path not defined");
       }
-      const data =
-        openedFiles[item.data.path]?.content ||
-        (await updateFile(item.data.path));
-      if (data) {
-        const content = data;
-        const file = {
-          name: item.data?.name || item.name,
-          content: content,
-          path: item.data.path,
-        };
-        setOpenedFiles((prev) => ({
-          ...prev,
-          [`${file.path}`]: file,
-        }));
-        setFocusedFile(file);
+      let content: FileContent = buf;
+      if (!node.data.data.content) {
+        const result = await updateFile(item.data.path);
+        if (result) {
+          content = result;
+        }
+      } else {
+        content = node.data.data.content;
+        updateFile(item.data.path, true);
       }
+      const file = {
+        name: item.data?.name || item.name,
+        content: content,
+        path: item.data.path,
+      };
+      setOpenedFiles((prev) => ({
+        ...prev,
+        [`${file.path}`]: file,
+      }));
+      setFocusedFile(file);
     } catch (error) {
       console.error(error);
     }
@@ -178,7 +194,6 @@ export default function EditorPage() {
     try {
       const item = node.data;
 
-      console.log(item);
       if (!item.data.path) {
         throw new Error("Path not defined");
       }
@@ -217,7 +232,6 @@ export default function EditorPage() {
 
                   <FileExplorer
                     onOpenDir={onOpenDir}
-                    currentFile={focusedFile}
                     items={items}
                     onOpen={openFile}
                   />
@@ -231,9 +245,9 @@ export default function EditorPage() {
           <Panel minSize={"30%"}>
             <div className="w-full relative h-full">
               {Object.values(openedFiles).length > 0 && (
-                <div className="flex border-b scrollbar-hide items-center overflow-x-scroll">
+                <div className="flex border-b z-1 relative bg-background/20 backdrop-blur-2xl scrollbar-hide items-center overflow-x-scroll">
                   {Object.values(openedFiles).map((e) => {
-                    const isCurrent = focusedFile.path === e.path
+                    const isCurrent = focusedFile?.path === e.path;
 
                     return (
                       <div className="relative group ">
@@ -244,8 +258,8 @@ export default function EditorPage() {
                             isCurrent && "border-t-primary",
                           )}
                         >
-                      <FileIcon size={16} filePath={e.path} />
-                           <div className="text-sm">{e.name} </div>
+                          <FileIcon size={16} filePath={e.path} />
+                          <div className="text-sm">{e.name} </div>
                         </div>
                         <X
                           onClick={() => removeFileFromBar(e)}
@@ -258,11 +272,10 @@ export default function EditorPage() {
                 </div>
               )}
               <div className="w-full relative h-full">
-                {focusedFile.content.length > 0 ? (
-                  <CodeEditor
-                    value={focusedFile.content}
-                    language={GetMonacoLanguage(focusedFile.name)}
-                    onChange={updateFileContent}
+                {focusedFile && focusedFile?.content.length > 0 ? (
+                  <EditorSpaceRenderer
+                    updateFileContent={updateFileContent}
+                    file={focusedFile}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center ">

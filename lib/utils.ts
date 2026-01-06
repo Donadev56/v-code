@@ -2,6 +2,8 @@ import { LOCAL_SSH_CONFIG, SSH_CONFIG } from "@/types/types";
 import { clsx, type ClassValue } from "clsx";
 import path from "path";
 import { twMerge } from "tailwind-merge";
+import { fromString } from "uint8arrays/from-string";
+import { SupportedEncodings, toString } from "uint8arrays/to-string";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -33,171 +35,64 @@ export const KeyCodes = {
   TAB: "\t",
 } as const;
 
-export const items: Record<string, any> = {
-  root: {
-    index: "root",
-    path: "",
-    isFolder: true,
-    children: ["src", "public", "package.json"],
-  },
+export function isImage(filePath: string): boolean {
+  const ext = filePath.split(".").pop()?.toLowerCase();
 
-  // ===== src =====
-  src: {
-    index: "src",
-    path: "src",
-    isFolder: true,
-    children: ["App.jsx", "main.jsx", "components"],
-  },
+  if (!ext) return false;
 
-  components: {
-    index: "components",
-    path: "src/components",
-    isFolder: true,
-    children: ["Header.jsx", "Footer.jsx"],
-  },
-
-  "App.jsx": {
-    index: "App.jsx",
-    path: "src/App.jsx",
-    isFolder: false,
-    data: {
-      content: `
-import React from "react";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-
-export default function App() {
-  return (
-    <div>
-      <Header />
-      <main>
-        <h1>Hello from App.jsx!</h1>
-      </main>
-      <Footer />
-    </div>
-  );
+  return [
+    "png",
+    "jpg",
+    "jpeg",
+    "gif",
+    "webp",
+    "svg",
+    "bmp",
+    "ico",
+    "tiff",
+    "avif",
+  ].includes(ext);
 }
-      `.trim(),
-    },
-  },
 
-  "main.jsx": {
-    index: "main.jsx",
-    path: "src/main.jsx",
-    isFolder: false,
-    data: {
-      content: `
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
+export function isPdf(filePath: string): boolean {
+  const ext = filePath.split(".").pop()?.toLowerCase();
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
-      `.trim(),
-    },
-  },
-
-  "Header.jsx": {
-    index: "Header.jsx",
-    path: "src/components/Header.jsx",
-    isFolder: false,
-    data: {
-      content: `
-import React from "react";
-
-export default function Header() {
-  return (
-    <header>
-      <h2>My App Header</h2>
-    </header>
-  );
+  if (!ext) return false;
+  return ["pdf"].includes(ext);
 }
-      `.trim(),
-    },
-  },
 
-  "Footer.jsx": {
-    index: "Footer.jsx",
-    path: "src/components/Footer.jsx",
-    isFolder: false,
-    data: {
-      content: `
-import React from "react";
+export function getMimeType(filePath: string): string {
+  const ext = filePath.split(".").pop()?.toLowerCase();
 
-export default function Footer() {
-  return (
-    <footer>
-      <p>© 2026 My Project</p>
-    </footer>
-  );
+  if (!ext) return "application/octet-stream";
+
+  const map: Record<string, string> = {
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    webp: "image/webp",
+    svg: "image/svg+xml",
+    bmp: "image/bmp",
+    ico: "image/x-icon",
+    tiff: "image/tiff",
+    avif: "image/avif",
+
+    pdf: "application/pdf",
+    json: "application/json",
+    txt: "text/plain",
+    html: "text/html",
+    css: "text/css",
+    js: "text/javascript",
+    ts: "text/typescript",
+  };
+
+  return map[ext] ?? "application/octet-stream";
 }
-      `.trim(),
-    },
-  },
 
-  // ===== public =====
-  public: {
-    index: "public",
-    path: "public",
-    isFolder: true,
-    children: ["index.html", "favicon.ico"],
-  },
-
-  "index.html": {
-    index: "index.html",
-    path: "public/index.html",
-    isFolder: false,
-    data: {
-      content: `
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Project</title>
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>
-      `.trim(),
-    },
-  },
-
-  "favicon.ico": {
-    index: "favicon.ico",
-    path: "public/favicon.ico",
-    isFolder: false,
-    data: { content: "binary data placeholder" },
-  },
-
-  // ===== root files =====
-  "package.json": {
-    index: "package.json",
-    path: "package.json",
-    isFolder: false,
-    data: {
-      content: `
-{
-  "name": "my-project",
-  "version": "1.0.0",
-  "main": "src/main.jsx",
-  "scripts": {
-    "start": "vite",
-    "build": "vite build"
-  },
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
-  "devDependencies": {
-    "vite": "^5.0.0"
-  }
+export function Utf8ToBase64(data: string) {
+  return Buffer.from(data, "utf8").toString("base64");
 }
-      `.trim(),
-    },
-  },
-};
 
 export const PROMPT = "$ ";
 
@@ -208,6 +103,39 @@ export function isPaste(data: string) {
 export const GetPath = (dir: string, name: string) => {
   return path.posix.join(dir, name);
 };
+
+export function Uint8ArrayToString(
+  data: Uint8Array,
+  encoding: SupportedEncodings = "utf-8",
+) {
+  return toString(data, encoding);
+}
+
+export function ParseFile(data: string) {
+  return JSON.parse(data, (key, value) => {
+    if (key === "content") {
+      return fromString(value, "base64");
+    }
+    return value;
+  });
+}
+
+export function StringifyFile(data: any) {
+  return JSON.stringify(data, (key, value) => {
+    if (key === "content") {
+      return fromString(value, "base64");
+    }
+    return value;
+  });
+}
 export function getKeyFromConfig(config: SSH_CONFIG | LOCAL_SSH_CONFIG) {
-  return `${config.user}@${config.host}`;
+  return `${config?.user}@${config?.host}`;
+}
+
+export function utf8StringToUint8Array(str: string) {
+  const arr = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) {
+    arr[i] = str.charCodeAt(i);
+  }
+  return arr;
 }

@@ -63,12 +63,12 @@ export const EditorDialog: React.FC<EditorDialogProps> = ({
       >
         <div
           className={cn(
-            "fixed flex top-10 left-0 right-0 w-full justify-center items-center p-4",
+            "fixed z-100 flex top-10 left-0 right-0 w-full justify-center items-center p-4",
           )}
         >
           <div
             onClick={() => dialog.hideDialog()}
-            className="bg-black/40 top-0 left-0 right-0 bottom-0 fixed z-99 w-full h-full "
+            className="bg-black/40 top-0 left-0 right-0 bottom-0 fixed z-101 w-full h-full "
           />
           <div className="max-w-[380px] z-10000000 flex items-center justify-center w-full">
             {showChildrenOnly ? (

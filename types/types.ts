@@ -1,8 +1,10 @@
 export type OpenedFile = {
   name: string;
-  content: string;
+  content: FileContent;
   path: string;
 };
+
+export type FileContent = Uint8Array;
 
 export type SSH_CONFIG = {
   host: string;
@@ -70,7 +72,7 @@ export interface SftpApi {
   list(path?: string): Promise<SftpFile[]>;
   dispose(): Promise<void>;
   isConnected(): Promise<boolean>;
-  readFile(remotePath: any): Promise<string>;
+  readFile(remotePath: any): Promise<FileContent>;
 }
 
 export interface TerminalConfig {
@@ -98,7 +100,12 @@ export type FileItem = {
   isFolder: boolean;
   children: string[];
   name: string;
-  data: { content?: string; path: string; sftpFile?: SftpFile; name?: string };
+  data: {
+    content?: FileContent;
+    path: string;
+    sftpFile?: SftpFile;
+    name?: string;
+  };
 };
 export interface IpcResultSuccess<T = void> {
   success: true;
@@ -123,3 +130,4 @@ export interface ElectronStorage {
 }
 
 export type TerminalState = "waiting" | "ready" | "executing" | "errored";
+export const buf = Buffer.alloc(0);

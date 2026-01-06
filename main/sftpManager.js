@@ -38,7 +38,7 @@ class SFTPManager {
     if (!this.isConnected) throw new Error("Not connected");
     const buffer = await this.sftp.get(remotePath);
 
-    return buffer.toString("utf8");
+    return buffer;
   }
 }
 

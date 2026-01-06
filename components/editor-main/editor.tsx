@@ -1,5 +1,5 @@
 import Monaco, { EditorProps, useMonaco } from "@monaco-editor/react";
-import OPENCODE_THEME from "./themes/openscan.json";
+import OPENCODE_THEME from "../themes/openscan.json";
 import React from "react";
 
 export const CodeEditor = ({ ...props }: EditorProps) => {

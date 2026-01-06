@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  buf,
   ElectronStorage,
+  FileContent,
   FileItem,
   LOCAL_SSH_CONFIG,
   OpenedFile,
@@ -14,12 +16,20 @@ import React, { useRef } from "react";
 import { createContext, useContext, useState, ReactNode } from "react";
 import Client from "ssh2-sftp-client";
 import { Terminal } from "@xterm/xterm";
-import { getKeyFromConfig, GetPath, PROMPT } from "@/lib/utils";
+import {
+  getKeyFromConfig,
+  GetPath,
+  ParseFile,
+  PROMPT,
+  StringifyFile,
+} from "@/lib/utils";
 import { toast } from "sonner";
+import { toString } from "uint8arrays/to-string";
+import { fromString } from "uint8arrays/from-string";
 
 interface OpenEditorContextType {
-  focusedFile: OpenedFile;
-  setFocusedFile: React.Dispatch<React.SetStateAction<OpenedFile>>;
+  focusedFile: OpenedFile | null;
+  setFocusedFile: React.Dispatch<React.SetStateAction<OpenedFile | null>>;
   isTerminalVisible: boolean;
   setIsTerminalVisible: React.Dispatch<React.SetStateAction<boolean>>;
   terminalState: {
@@ -59,8 +69,8 @@ interface OpenEditorContextType {
   openPath(path: string): Promise<void>;
   setItems: React.Dispatch<React.SetStateAction<Record<string, FileItem>>>;
   items: Record<string, FileItem>;
-  updateFile(path: string): Promise<string | undefined>;
-  readFile(path: string): Promise<string | undefined>;
+  updateFile(path: string, silent?: boolean): Promise<FileContent | undefined>;
+  readFile(path: string): Promise<FileContent | undefined>;
   getPathFiles(path: string): Promise<Record<string, FileItem> | undefined>;
   config: SSH_CONFIG | null;
   setConfig: React.Dispatch<React.SetStateAction<SSH_CONFIG | null>>;
@@ -82,6 +92,14 @@ interface OpenEditorContextType {
     }>
   >;
   updateFolder(path: string): Promise<void>;
+  openedFiles: {
+    [name: string]: OpenedFile;
+  };
+  setOpenedFiles: React.Dispatch<
+    React.SetStateAction<{
+      [name: string]: OpenedFile;
+    }>
+  >;
 }
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
@@ -89,14 +107,11 @@ const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
 );
 
 export function OpenEditorProvider({ children }: { children: ReactNode }) {
-  const [focusedFile, setFocusedFile] = React.useState<OpenedFile>({
-    name: "",
-    content: "",
-    path: "",
-  });
+  const [focusedFile, setFocusedFile] = React.useState<OpenedFile | null>(null);
   const [isTerminalVisible, setIsTerminalVisible] = React.useState(false);
   const [config, setConfig] = React.useState<SSH_CONFIG | null>(null);
   const localConfigKey = "local-config-list-0.01";
+
   const [localConfig, setLocalConfig] = React.useState<{
     [x: string]: {
       config: LOCAL_SSH_CONFIG;
@@ -109,7 +124,9 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = React.useState<Record<string, FileItem>>({});
   const [isLoading, setIsLoading] = React.useState(false);
   const sftpRef = React.useRef<SftpApi | null>(null);
-
+  const [openedFiles, setOpenedFiles] = React.useState<{
+    [name: string]: OpenedFile;
+  }>({});
   const [terminalState, setTerminalState] = useState<{
     [x: string]: {
       isConnected: boolean;
@@ -123,6 +140,16 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   const [activeTerminalIds, setActiveTerminalIds] = React.useState<number[]>(
     [],
   );
+
+  const openedFileKeyBase = "local:opened:v0.05:file:for:";
+  const focusFileKeyBase = "local:focus:file:v0.05:file:for:";
+
+  const localOpenedFileKey = React.useMemo(() => {
+    return `${openedFileKeyBase}${currentPath}`;
+  }, [currentPath]);
+  const localItemsFileKey = React.useMemo(() => {
+    return `local:items:file:for:${currentPath}`;
+  }, [currentPath]);
 
   React.useEffect(() => {
     getSavedConfigData().then((result) => {
@@ -142,6 +169,79 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       }
     });
   }, []);
+
+  React.useEffect(() => {
+    saveOpenedFiles();
+    const openedFilesList = Object.values(openedFiles);
+    if (openedFilesList.length > 0 && !focusedFile) {
+      setFocusedFile(openedFilesList[0]);
+    }
+  }, [openedFiles, currentPath]);
+
+  React.useEffect(() => {
+    saveFocusedFile();
+  }, [focusedFile]);
+
+  React.useEffect(() => {
+    saveItems();
+  }, [items, currentPath]);
+
+  async function saveItems() {
+    try {
+      if (Object.values(items).length === 0) {
+        return;
+      }
+      if (currentPath.trim().length === 0) {
+        return;
+      }
+      console.log("Saving items....");
+      await saveData(StringifyFile(items), localItemsFileKey);
+    } catch (error: any) {
+      console.error(error?.message);
+      toast.error("Failed to save opened files", {
+        description: (error as any)?.message || String(error),
+      });
+    }
+  }
+
+  async function saveFocusedFile() {
+    try {
+      if (!focusedFile) {
+        return;
+      }
+      if (currentPath.trim().length === 0) {
+        return;
+      }
+      console.log("Saving files....");
+      const key = `${focusFileKeyBase}:${currentPath}`;
+
+      await saveData(StringifyFile(focusedFile), key);
+    } catch (error: any) {
+      console.error(error?.message);
+      toast.error("Failed to save focus files", {
+        description: (error as any)?.message || String(error),
+      });
+    }
+  }
+
+  async function saveOpenedFiles() {
+    try {
+      if (Object.values(openedFiles).length === 0) {
+        return;
+      }
+      if (currentPath.trim().length === 0) {
+        return;
+      }
+      console.log("Saving files....");
+
+      await saveData(StringifyFile(openedFiles), localOpenedFileKey);
+    } catch (error: any) {
+      console.error(error?.message);
+      toast.error("Failed to save opened files", {
+        description: (error as any)?.message || String(error),
+      });
+    }
+  }
 
   async function updateLocalConfig(config: SSH_CONFIG) {
     const localConfig: LOCAL_SSH_CONFIG = {
@@ -166,7 +266,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       config: { ...localData[key]?.config, ...localConfig },
       paths: localData[key]?.paths,
     };
-    saveData(localData);
+    saveData(JSON.stringify(localData), localConfigKey);
+    setLocalConfig(localData);
   }
   async function addPath(key: string, path: string) {
     let localData: {
@@ -187,9 +288,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     localData[key].paths = [path, ...localData[key].paths];
     localData[key].paths = Array.from(new Set(localData[key].paths));
 
-    saveData(localData);
+    saveData(JSON.stringify(localData), localConfigKey);
+    setLocalConfig(localData);
   }
-  async function saveData(data: any) {
+  async function saveData(data: string, key: string) {
     if (typeof window === "undefined") {
       return;
     }
@@ -197,21 +299,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     if (!st) {
       throw new Error("Storage not found");
     }
-    setLocalConfig(data);
 
-    await st.setKey(localConfigKey, JSON.stringify(data));
+    await st.setKey(key, data);
   }
 
   async function getSavedConfigData() {
     try {
-      if (typeof window === "undefined") {
-        return;
-      }
-      const st = window?.electronStorage as ElectronStorage;
-      if (!st) {
-        throw new Error("Storage not found");
-      }
-      const result = await st.getKey(localConfigKey);
+      const result = await getData(localConfigKey);
       if (result) {
         return JSON.parse(result) as {
           [x: string]: {
@@ -223,8 +317,23 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       return {};
     } catch (error) {
       console.error({ error });
-
       return {};
+    }
+  }
+
+  async function getData(key: string) {
+    try {
+      if (typeof window === "undefined") {
+        return;
+      }
+      const st = window?.electronStorage as ElectronStorage;
+      if (!st) {
+        throw new Error("Storage not found");
+      }
+      const result = await st.getKey(key);
+      return result;
+    } catch (error) {
+      console.error({ error });
     }
   }
 
@@ -286,7 +395,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (error: any) {
-      console.error(error?.message);
+      console.error(error);
       toast.error("Failed to connect", {
         description: (error as any)?.message || String(error),
       });
@@ -383,6 +492,9 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       setCurrentPath(path);
       const key = getKeyFromConfig(config!);
       addPath(key, path);
+      setOpenedFiles({});
+
+      loadSavedData(path);
     } catch (error) {
       console.error(error);
     } finally {
@@ -390,9 +502,44 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function updateFile(path: string) {
+  async function loadSavedData(path: string) {
     try {
-      setIsLoading(true);
+      const focusedFileKey = `${focusFileKeyBase}:${path}`;
+      const openedFileKey = `${openedFileKeyBase}:${path}`;
+
+      const [oFilesString, focusFileString] = await Promise.all([
+        getData(openedFileKey),
+        getData(focusedFileKey),
+      ]);
+
+      console.log({ oFilesString, focusFileString });
+
+      if (oFilesString) {
+        const parsed = ParseFile(oFilesString) as {
+          [name: string]: OpenedFile;
+        };
+        setOpenedFiles((prev) => {
+          if (Object.values(prev).length > 0) {
+            return prev;
+          }
+          return parsed;
+        });
+      }
+
+      if (focusFileString) {
+        const parsed = ParseFile(focusFileString) as OpenedFile;
+        setFocusedFile(parsed);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function updateFile(path: string, silent = false) {
+    try {
+      if (!silent) {
+        setIsLoading(true);
+      }
       const data = await readFile(path);
       if (data) {
         setItems((prev) => {
@@ -421,6 +568,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         return;
       }
       const result = await sftp.readFile(path);
+      console.log({ result });
       if (result) {
         return result;
       }
@@ -490,7 +638,6 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       if (files) {
         const children = files["root"].children;
         delete files["root"];
-        console.log({ files, children });
 
         setItems((prev) => {
           if (file) {
@@ -518,6 +665,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   }
 
   const state: OpenEditorContextType = {
+    openedFiles,
+    setOpenedFiles,
     items,
     setItems,
     addConnection,
