@@ -151,6 +151,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     return `local:items:file:for:${currentPath}`;
   }, [currentPath]);
 
+  const listenerRegistered = React.useRef(false);
+
   React.useEffect(() => {
     getSavedConfigData().then((result) => {
       if (result) {
@@ -186,6 +188,57 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     saveItems();
   }, [items, currentPath]);
 
+  React.useEffect(() => {
+    if (sftpRef.current) {
+      const sftp = sftpRef.current;
+
+      sftp.onClose(onClose);
+
+      sftp.onEnd(onClose);
+
+      sftp.onError((error) => {
+        toast.error(error);
+      });
+
+      sftp.onReady(onReady);
+    }
+  }, [sftpRef.current]);
+
+  function onReady() {
+    toast.success("Connection established");
+    const lastConfig = Object.values(localConfig).sort(
+      (a, b) => b.config.updateTime - a.config.updateTime,
+    )[0];
+
+    if (lastConfig) {
+      openPath(lastConfig.paths[0]);
+    }
+  }
+  function onClose() {
+    () => {
+      toast.error("SFTP closed");
+
+      setTimeout(() => {
+        toast.promise(_attemptReconnect, {
+          loading: "Trying to reconnect",
+        });
+      }, 2500);
+    };
+  }
+
+  async function _attemptReconnect() {
+    try {
+      if (!config) {
+        throw new Error("Config not found");
+      }
+      await connectSftp(config);
+    } catch (error) {
+      console.error({ error });
+      toast.error("Failed to save opened files", {
+        description: (error as any)?.message || String(error),
+      });
+    }
+  }
   async function saveItems() {
     try {
       if (Object.values(items).length === 0) {
@@ -387,20 +440,19 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
           throw result.error;
         }
         setIsSftpConnected(true);
-        const lastConfig = Object.values(localConfig).sort(
-          (a, b) => b.config.updateTime - a.config.updateTime,
-        )[0];
-        if (lastConfig) {
-          openPath(lastConfig.paths[0]);
-        }
+        afterConnection();
       }
     } catch (error: any) {
-      console.error(error);
+      console.error({ error });
       toast.error("Failed to connect", {
         description: (error as any)?.message || String(error),
       });
     }
   };
+
+  function afterConnection() {
+    onReady();
+  }
 
   async function addConnection(conf = config) {
     try {
@@ -438,7 +490,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       }
       return result;
     } catch (error) {
-      console.error(error);
+      console.error({ error });
       throw error;
     }
   }
@@ -477,7 +529,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       }
       return result;
     } catch (error) {
-      console.error(error);
+      console.error({ error });
       throw error;
     }
   }
@@ -496,7 +548,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
       loadSavedData(path);
     } catch (error) {
-      console.error(error);
+      console.error({ error });
     } finally {
       setIsLoading(false);
     }
@@ -531,7 +583,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         setFocusedFile(parsed);
       }
     } catch (error) {
-      console.error(error);
+      console.error({ error });
     }
   }
 
@@ -555,7 +607,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         return data;
       }
     } catch (error) {
-      console.error(error);
+      console.error({ error });
     } finally {
       setIsLoading(false);
     }
@@ -573,7 +625,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         return result;
       }
     } catch (error) {
-      console.error(error);
+      console.error({ error });
     }
   }
 
@@ -657,7 +709,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         });
       }
     } catch (error) {
-      console.error(error);
+      console.error({ error });
       toast.error((error as any)?.message ?? String(error));
     } finally {
       setIsLoading(false);

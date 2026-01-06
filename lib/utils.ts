@@ -123,7 +123,7 @@ export function ParseFile(data: string) {
 export function StringifyFile(data: any) {
   return JSON.stringify(data, (key, value) => {
     if (key === "content") {
-      return fromString(value, "base64");
+      return toString(value, "base64");
     }
     return value;
   });

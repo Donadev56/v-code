@@ -1,8 +1,10 @@
 import SftpClient from "ssh2-sftp-client";
 import path from "path";
+import EventEmitter from "events";
 
-class SFTPManager {
+class SFTPManager extends EventEmitter {
   constructor() {
+    super();
     this.isConnected = false;
     this.sftp = null;
   }
@@ -10,7 +12,25 @@ class SFTPManager {
   async connect(config) {
     try {
       this.sftp = new SftpClient();
+
+      this.sftp.on("close", () => {
+        this.emit("close");
+        this.isConnected = false;
+      });
+
+      this.sftp.on("end", () => {
+        console.warn("SFTP connection ended");
+        this.emit("end");
+        this.isConnected = false;
+      });
+
+      this.sftp.on("error", (err) => {
+        console.error("SFTP error:", err);
+        this.emit("error", err);
+        this.isConnected = false;
+      });
       await this.sftp.connect(config);
+      this.emit("ready");
       this.isConnected = true;
       return { connected: true, error: null };
     } catch (error) {

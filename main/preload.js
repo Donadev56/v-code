@@ -31,6 +31,10 @@ contextBridge.exposeInMainWorld("sftpApi", {
   list: (path) => ipcRenderer.invoke("sftp:list", path),
   isConnected: () => ipcRenderer.invoke("sftp:isConnected"),
   readFile: (path) => ipcRenderer.invoke("sftp:read_file", path),
+  onClose: (cb) => ipcRenderer.invoke("sftp:close", cb),
+  onEnd: (cb) => ipcRenderer.invoke("sftp:end", cb),
+  onReady: (cb) => ipcRenderer.invoke("sftp:ready", cb),
+  onError: (cb) => ipcRenderer.invoke("sftp:error", (_, err) => cb(err)),
 });
 
 contextBridge.exposeInMainWorld("windowAPI", {

@@ -73,6 +73,10 @@ export interface SftpApi {
   dispose(): Promise<void>;
   isConnected(): Promise<boolean>;
   readFile(remotePath: any): Promise<FileContent>;
+  onReady: (callback: () => void) => void;
+  onClose: (callback: () => void) => void;
+  onEnd: (callback: () => void) => void;
+  onError: (callback: (error: any) => void) => void;
 }
 
 export interface TerminalConfig {
