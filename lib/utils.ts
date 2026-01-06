@@ -1,3 +1,4 @@
+import { LOCAL_SSH_CONFIG, SSH_CONFIG } from "@/types/types";
 import { clsx, type ClassValue } from "clsx";
 import path from "path";
 import { twMerge } from "tailwind-merge";
@@ -207,3 +208,6 @@ export function isPaste(data: string) {
 export const GetPath = (dir: string, name: string) => {
   return path.posix.join(dir, name);
 };
+export function getKeyFromConfig(config: SSH_CONFIG | LOCAL_SSH_CONFIG) {
+  return `${config.user}@${config.host}`;
+}

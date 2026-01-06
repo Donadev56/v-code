@@ -30,7 +30,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     "main/old/main copy.js",
-    "components/terminal_dialog.tsx"
+    "components/editor_dialog.tsx"
   ],
   "exclude": ["node_modules"]
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ElectronStorage,
   FileItem,
   LOCAL_SSH_CONFIG,
   OpenedFile,
@@ -13,7 +14,8 @@ import React, { useRef } from "react";
 import { createContext, useContext, useState, ReactNode } from "react";
 import Client from "ssh2-sftp-client";
 import { Terminal } from "@xterm/xterm";
-import { GetPath, PROMPT } from "@/lib/utils";
+import { getKeyFromConfig, GetPath, PROMPT } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface OpenEditorContextType {
   focusedFile: OpenedFile;
@@ -54,7 +56,7 @@ interface OpenEditorContextType {
   isSftpConnected: boolean;
   setCurrentPath: React.Dispatch<React.SetStateAction<string>>;
   currentPath: string;
-  openPath(): Promise<void>;
+  openPath(path: string): Promise<void>;
   setItems: React.Dispatch<React.SetStateAction<Record<string, FileItem>>>;
   items: Record<string, FileItem>;
   updateFile(path: string): Promise<string | undefined>;
@@ -62,8 +64,23 @@ interface OpenEditorContextType {
   getPathFiles(path: string): Promise<Record<string, FileItem> | undefined>;
   config: SSH_CONFIG | null;
   setConfig: React.Dispatch<React.SetStateAction<SSH_CONFIG | null>>;
-  localConfigList: LOCAL_SSH_CONFIG[];
-  setLocalConfigList: React.Dispatch<React.SetStateAction<LOCAL_SSH_CONFIG[]>>;
+  connectServer: () => Promise<void>;
+  isLoading: boolean;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  localConfig: {
+    [x: string]: {
+      config: LOCAL_SSH_CONFIG;
+      paths: string[];
+    };
+  };
+  setLocalConfig: React.Dispatch<
+    React.SetStateAction<{
+      [x: string]: {
+        config: LOCAL_SSH_CONFIG;
+        paths: string[];
+      };
+    }>
+  >;
 }
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
@@ -78,14 +95,22 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   });
   const [isTerminalVisible, setIsTerminalVisible] = React.useState(false);
   const [config, setConfig] = React.useState<SSH_CONFIG | null>(null);
-  const [localConfigList, setLocalConfigList] = React.useState<
-    LOCAL_SSH_CONFIG[]
-  >([]);
+  const localConfigKey = "local-config-list-0.01";
+  const [localConfig, setLocalConfig] = React.useState<{
+    [x: string]: {
+      config: LOCAL_SSH_CONFIG;
+      paths: string[];
+    };
+  }>({});
+
   const [isSftpConnected, setIsSftpConnected] = React.useState(false);
   const [currentPath, setCurrentPath] = React.useState("");
   const [items, setItems] = React.useState<Record<string, FileItem>>({});
+  const [isLoading, setIsLoading] = React.useState(false);
   const sftpRef = React.useRef<SftpApi | null>(null);
   console.log({ items });
+  console.log(localConfig);
+  console.log({ currentPath });
 
   const [terminalState, setTerminalState] = useState<{
     [x: string]: {
@@ -100,6 +125,110 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   const [activeTerminalIds, setActiveTerminalIds] = React.useState<number[]>(
     [],
   );
+
+  React.useEffect(() => {
+    getSavedConfigData().then((result) => {
+      if (result) {
+        setLocalConfig(result);
+        const lastConfig = Object.values(result).sort(
+          (a, b) => b.config.updateTime - a.config.updateTime,
+        )[0];
+        if (lastConfig) {
+          setConfig((prev) => ({
+            ...prev,
+            host: lastConfig.config.host,
+            user: lastConfig.config.user,
+            port: lastConfig.config.port,
+          }));
+        }
+      }
+    });
+  }, []);
+
+  async function updateLocalConfig(config: SSH_CONFIG) {
+    const localConfig: LOCAL_SSH_CONFIG = {
+      user: config.user,
+      host: config.host,
+      port: config.port,
+      updateTime: Number((Date.now() / 1000).toFixed(0)),
+    };
+    let localData: {
+      [x: string]: {
+        config: LOCAL_SSH_CONFIG;
+        paths: string[];
+      };
+    } = {};
+    const key = getKeyFromConfig(localConfig);
+    const savedData = await getSavedConfigData();
+    if (savedData) {
+      localData = savedData;
+    }
+
+    localData[key] = {
+      config: { ...localData[key]?.config, ...localConfig },
+      paths: localData[key]?.paths,
+    };
+    saveData(localData);
+  }
+  async function addPath(key: string, path: string) {
+    let localData: {
+      [x: string]: {
+        config: LOCAL_SSH_CONFIG;
+        paths: string[];
+      };
+    } = {};
+
+    const savedData = await getSavedConfigData();
+    if (savedData) {
+      localData = savedData;
+    }
+    if (!localData[key]?.paths) {
+      localData[key].paths = [];
+    }
+
+    localData[key].paths.push(path);
+    localData[key].paths = Array.from(new Set(localData[key].paths));
+
+    saveData(localData);
+  }
+  async function saveData(data: any) {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const st = window?.electronStorage as ElectronStorage;
+    if (!st) {
+      throw new Error("Storage not found");
+    }
+    setLocalConfig(data);
+
+    await st.setKey(localConfigKey, JSON.stringify(data));
+  }
+
+  async function getSavedConfigData() {
+    try {
+      if (typeof window === "undefined") {
+        return;
+      }
+      const st = window?.electronStorage as ElectronStorage;
+      if (!st) {
+        throw new Error("Storage not found");
+      }
+      const result = await st.getKey(localConfigKey);
+      if (result) {
+        return JSON.parse(result) as {
+          [x: string]: {
+            config: LOCAL_SSH_CONFIG;
+            paths: string[];
+          };
+        };
+      }
+      return {};
+    } catch (error) {
+      console.error({ error });
+
+      return {};
+    }
+  }
 
   function onConnected(processId: number) {
     const term = terminal[processId.toString()];
@@ -137,14 +266,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
   const connectSftp = async (config: SSH_CONFIG) => {
     try {
+      updateLocalConfig(config);
+
       if (typeof window === "undefined") {
         return;
       }
       const sftp = (window as any).sftpApi as SftpApi;
       if (sftp) {
-        if (await sftp.isConnected()) {
-          throw new Error("Already connected");
-        }
         sftpRef.current = sftp;
 
         const result = await sftp.connect(config);
@@ -153,13 +281,19 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         }
         setIsSftpConnected(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      toast.error("Failed to connect", {
+        description: (error as any)?.message || String(error),
+      });
     }
   };
 
-  async function addConnection(config: SSH_CONFIG) {
+  async function addConnection(conf = config) {
     try {
+      if (!conf) {
+        throw new Error("Config not defined");
+      }
       if (typeof window === "undefined") {
         throw new Error("Window not defined");
       }
@@ -168,7 +302,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       if (!sshApi) {
         throw new Error("Api not loaded");
       }
-      const result = await sshApi.connect(config);
+      const result = await sshApi.connect(conf);
       if (result) {
         if (
           result?.error?.message === "Already connected" ||
@@ -195,13 +329,23 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   }
-  React.useEffect(() => {
-    if (config) {
-      connect(config);
 
-      connectSftp(config);
+  async function connectServer() {
+    try {
+      setIsLoading(true);
+      if (!config) {
+        throw new Error("Config not found");
+      }
+      const conf = { ...config, port: Number(config?.port) };
+      if (config) {
+        await Promise.all([connect(conf), connectSftp(conf)]);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [config]);
+  }
 
   function addTerminal(terminal: Terminal, processId: number) {
     setTerminal((prev) => ({ ...prev, [processId.toString()]: terminal }));
@@ -225,19 +369,26 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function openPath() {
+  async function openPath(path: string) {
     try {
-      const files = await getPathFiles(currentPath);
+      setIsLoading(true);
+      const files = await getPathFiles(path);
       if (files) {
         setItems(files);
       }
+      setCurrentPath(path);
+      const key = getKeyFromConfig(config!);
+      addPath(key, path);
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
   async function updateFile(path: string) {
     try {
+      setIsLoading(true);
       const data = await readFile(path);
       if (data) {
         setItems((prev) => {
@@ -260,6 +411,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -280,6 +433,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
   async function getPathFiles(path: string) {
     try {
+      console.log({ path });
       const sftp = sftpRef.current;
       if (!sftp) {
         return;
@@ -303,7 +457,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
             index: item.name,
             isFolder: item.type === "d",
             children: [],
-            data: { sftpFile: item, path: GetPath(currentPath, item.name) },
+            data: { sftpFile: item, path: GetPath(path, item.name) },
             name: item.name,
           };
         }
@@ -311,6 +465,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       return files;
     } catch (error) {
       console.error(error);
+      toast.error((error as any)?.message ?? String(error));
     }
   }
 
@@ -338,8 +493,11 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     updateFile,
     config,
     setConfig,
-    localConfigList,
-    setLocalConfigList,
+    localConfig,
+    setLocalConfig,
+    connectServer,
+    isLoading,
+    setIsLoading,
   };
 
   return (

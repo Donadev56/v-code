@@ -3,34 +3,30 @@
 
 import React, { createContext, useContext, useState } from "react";
 
-interface TerminalDialogContextType {
+interface EditorDialogContextType {
   showDialog: (content: React.ReactNode) => void;
   hideDialog: () => void;
   isVisible: boolean;
   content: React.ReactNode;
 }
 
-const TerminalDialogContext = createContext<
-  TerminalDialogContextType | undefined
->(undefined);
+const EditorDialogContext = createContext<EditorDialogContextType | undefined>(
+  undefined,
+);
 
-export function useTerminalDialog() {
-  const context = useContext(TerminalDialogContext);
+export function useEditorDialog() {
+  const context = useContext(EditorDialogContext);
   if (!context) {
-    throw new Error(
-      "useTerminalDialog must be used within TerminalDialogProvider",
-    );
+    throw new Error("useEditorDialog must be used within EditorDialogProvider");
   }
   return context;
 }
 
-interface TerminalDialogProviderProps {
+interface EditorDialogProviderProps {
   children: React.ReactNode;
 }
 
-export function TerminalDialogProvider({
-  children,
-}: TerminalDialogProviderProps) {
+export function EditorDialogProvider({ children }: EditorDialogProviderProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [content, setContent] = useState<React.ReactNode>(null);
 
@@ -45,11 +41,11 @@ export function TerminalDialogProvider({
   };
 
   return (
-    <TerminalDialogContext.Provider
+    <EditorDialogContext.Provider
       value={{ showDialog, hideDialog, isVisible, content }}
     >
       {children}
       <div id="terminal-dialog-portal" />
-    </TerminalDialogContext.Provider>
+    </EditorDialogContext.Provider>
   );
 }

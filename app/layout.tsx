@@ -4,7 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { OpenEditorProvider } from "@/hooks/useOpenEditor";
 import { Toaster } from "@/components/ui/sonner";
-import { TerminalDialogProvider } from "@/hooks/useDialog";
+import { EditorDialogProvider } from "@/hooks/useDialog";
 import { TerminalDialogPortal } from "@/hooks/portal";
 
 const geistSans = Geist({
@@ -34,10 +34,10 @@ export default function RootLayout({
       >
         <OpenEditorProvider>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            <TerminalDialogProvider>
+            <EditorDialogProvider>
               {children}
               <TerminalDialogPortal />
-            </TerminalDialogProvider>
+            </EditorDialogProvider>
             <Toaster />
           </ThemeProvider>
         </OpenEditorProvider>

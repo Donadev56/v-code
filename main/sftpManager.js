@@ -9,9 +9,6 @@ class SFTPManager {
 
   async connect(config) {
     try {
-      if (this.isConnected) {
-        throw new Error("Already connected");
-      }
       this.sftp = new SftpClient();
       await this.sftp.connect(config);
       this.isConnected = true;

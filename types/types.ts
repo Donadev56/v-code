@@ -16,6 +16,7 @@ export type LOCAL_SSH_CONFIG = {
   host: string;
   port: number;
   user: string;
+  updateTime: number;
 };
 
 type PromptType = "simple" | "full";
@@ -98,16 +99,26 @@ export type FileItem = {
   name: string;
   data: { content?: string; path: string; sftpFile?: SftpFile };
 };
+export interface IpcResultSuccess<T = void> {
+  success: true;
+  data?: T;
+  value?: T;
+  exists?: boolean;
+  files?: string[];
+}
+
+export interface IpcResultError {
+  success: false;
+  error: string;
+}
+
+export type IpcResult<T = void> = IpcResultSuccess<T> | IpcResultError;
+
 export interface ElectronStorage {
-  saveData(filename: string, data: any): Promise<boolean>;
-  readData(filename: string): Promise<any | null>;
-  deleteData(filename: string): Promise<boolean>;
-  exists(filename: string): Promise<boolean>;
-  listFiles(): Promise<string[]>;
-  setKey(key: string, value: any): Promise<boolean>;
+  setKey(key: string, value: any): Promise<any>;
   getKey(key: string, defaultValue?: any): Promise<any>;
-  deleteKey(key: string): Promise<boolean>;
-  clearStore(): Promise<boolean>;
+  deleteKey(key: string): Promise<any>;
+  clearStore(): Promise<any>;
 }
 
 export type TerminalState = "waiting" | "ready" | "executing" | "errored";

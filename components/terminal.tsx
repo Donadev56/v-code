@@ -24,7 +24,7 @@ export const TerminalComponent = ({ processId }: { processId: number }) => {
   const {
     terminalState,
     setTerminalState,
-    connect,
+    connectServer,
     addTerminal,
     onConnected,
     deleteTerminal,
@@ -91,7 +91,7 @@ export const TerminalComponent = ({ processId }: { processId: number }) => {
         terminal.writeln("\r\nAttempting to reconnect...");
         setTermState(false, "waiting");
 
-        connect();
+        connectServer();
       }
     }, 3000);
   }

@@ -10,7 +10,7 @@ import {
   GetExtension,
   GetMonacoLanguage,
 } from "@/lib/files";
-import { cn } from "@/lib/utils";
+import { cn, getKeyFromConfig } from "@/lib/utils";
 import { FileItem, OpenedFile } from "@/types/types";
 import { FileIcon, PlusIcon, SearchIcon, Trash2, X } from "lucide-react";
 import React from "react";
@@ -20,20 +20,19 @@ import { AiOutlineCodeSandbox } from "react-icons/ai";
 import { TerminalComponent } from "@/components/terminal";
 import { IoClose, IoTerminalOutline } from "react-icons/io5";
 import { toast } from "sonner";
-import {
-  TerminalButton,
-  TerminalDialog,
-  TerminalInput,
-} from "@/components/terminal_dialog";
-import { useTerminalDialog } from "@/hooks/useDialog";
-import { EnterPathDialog } from "@/components/terminal_inputs";
+import { TerminalButton, TerminalInput } from "@/components/editor_dialog";
+import { EnterPathDialog } from "@/components/editor_inputs";
 import { TerminalsView } from "@/components/terminal_view";
 import { NodeApi } from "react-arborist";
 import { TranslateX, TranslateY } from "@/components/translate";
 import { Button } from "@/components/ui/button";
 import { FaMinus } from "react-icons/fa";
 import { RiExpandUpDownFill } from "react-icons/ri";
-import { TerminalTopEditorView } from "@/components/terminal_top_editor_view";
+import { EditorTopView } from "@/components/editor_top_editor_view";
+import { TopLoader } from "@/components/top_loader";
+import { useEditorDialog } from "@/hooks/useDialog";
+import { EditorBottomView } from "@/components/editor_bottom_view";
+import { EditorConfigPathsListView } from "@/components/editor_config_paths_view";
 
 export const EditorPage = () => {
   const [openedFiles, setOpenedFiles] = React.useState<{
@@ -54,20 +53,31 @@ export const EditorPage = () => {
     setCurrentPath,
     updateFile,
     readFile,
-
+    isLoading,
+    config,
+    localConfig,
     items,
   } = useOpenEditor();
   const [currentTerminalId, setCurrentTerminalId] = React.useState(0);
   const [isVisible, setVisible] = React.useState(false);
-  const dialog = useTerminalDialog();
+  const dialog = useEditorDialog();
 
   React.useEffect(() => {
     if (!isSftpConnected) {
       toast.error("SFTP not connected");
       return;
     }
-    if (currentPath.length === 0) {
-      dialog.showDialog(<EnterPathDialog />);
+    if (!config) {
+      return;
+    }
+    const key = getKeyFromConfig(config);
+    const data = localConfig[key];
+    if (data) {
+      if (data?.paths?.length > 0) {
+        dialog.showDialog(<EditorConfigPathsListView />);
+      } else {
+        dialog.showDialog(<EnterPathDialog />);
+      }
     }
   }, [isSftpConnected]);
 
@@ -137,6 +147,7 @@ export const EditorPage = () => {
   const openFile = async (node: NodeApi<FileItem>) => {
     try {
       const item = node.data;
+
       console.log(item);
       if (!item.data.path) {
         throw new Error("Path not defined");
@@ -163,36 +174,43 @@ export const EditorPage = () => {
   };
 
   return (
-    <div className="flex w-full flex-col items-center h-svh  ">
-      <TerminalTopEditorView />
+    <div className="flex relative w-full flex-col items-center h-svh  ">
+      <EditorTopView />
       <div
         style={{
-          maxHeight: "calc(100svh - 45px)",
-          minHeight: "calc(100svh - 40px)",
+          maxHeight: "calc(100svh - 75px)",
+          minHeight: "calc(100svh - 75px)",
         }}
-        className="w-full  p-8"
+        className="w-full relative p-4"
       >
+        {isLoading && <TopLoader />}
         <Group
           // direction="horizontal"
           className="w-full h-full   border "
         >
-          <TranslateX condition={Object.values(items).length > 0}>
+          {Object.values(items).length > 0 && (
             <Panel defaultSize={180}>
-              <div className="w-full py-4">
-                <div className="flex text-sm p-4 py-3 overflow-x-scroll">
-                  Explorer
+              <TranslateX
+                className="w-full"
+                condition={Object.values(items).length > 0}
+              >
+                <div className="w-full py-4">
+                  <div className="flex text-sm p-4 py-3 overflow-x-scroll">
+                    Explorer
+                  </div>
+
+                  <FileExplorer
+                    currentFile={focusedFile}
+                    items={items}
+                    onOpen={openFile}
+                  />
                 </div>
-
-                <FileExplorer
-                  currentFile={focusedFile}
-                  items={items}
-                  onOpen={openFile}
-                />
-              </div>
+              </TranslateX>
             </Panel>
+          )}
+          {Object.values(items).length > 0 && (
             <Separator className="h-full w-0.5 bg-border" />
-          </TranslateX>
-
+          )}
           <Panel minSize={"30%"}>
             <div className="w-full relative h-full">
               {Object.values(openedFiles).length > 0 && (
@@ -307,6 +325,7 @@ export const EditorPage = () => {
           </Panel>
         </Group>
       </div>
+      <EditorBottomView />
     </div>
   );
 };

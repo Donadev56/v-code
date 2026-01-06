@@ -3,10 +3,10 @@
 
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useTerminalDialog } from "./useDialog";
+import { useEditorDialog } from "./useDialog";
 
 export function TerminalDialogPortal() {
-  const { content } = useTerminalDialog();
+  const { content } = useEditorDialog();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

@@ -39,7 +39,7 @@ export const FileExplorer = ({
 
   return (
     <Tree
-      initialData={data}
+      data={data}
       openByDefault={false}
       width="100%"
       height={600}

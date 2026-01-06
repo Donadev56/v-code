@@ -2,8 +2,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { TranslateY } from "./translate";
-import { useTerminalDialog } from "@/hooks/useDialog";
 import { useOpenEditor } from "@/hooks/useOpenEditor";
+import { useEditorDialog } from "@/hooks/useDialog";
 
 export interface TerminalButton extends React.ComponentProps<typeof Button> {
   text?: string;
@@ -14,7 +14,7 @@ export interface TerminalInput extends React.ComponentProps<typeof Input> {
   icon?: React.ReactNode;
 }
 
-export interface TerminalDialogProps extends React.ComponentProps<"div"> {
+export interface EditorDialogProps extends React.ComponentProps<"div"> {
   isVisible: boolean;
   buttons?: React.ReactNode[];
   title?: string;
@@ -27,7 +27,7 @@ export interface TerminalDialogProps extends React.ComponentProps<"div"> {
   onSubmit?: () => void;
 }
 
-export const TerminalDialog: React.FC<TerminalDialogProps> = ({
+export const EditorDialog: React.FC<EditorDialogProps> = ({
   isVisible,
   buttons,
   className,
@@ -41,7 +41,7 @@ export const TerminalDialog: React.FC<TerminalDialogProps> = ({
   onSubmit,
   ...props
 }) => {
-  const dialog = useTerminalDialog();
+  const dialog = useEditorDialog();
   const renderButtons = () => {
     if (!buttons?.length) return null;
 
@@ -55,6 +55,7 @@ export const TerminalDialog: React.FC<TerminalDialogProps> = ({
   return (
     <TranslateY className="w-full" condition={isVisible}>
       <form
+        className="w-full"
         onSubmit={(e) => {
           e.preventDefault();
           onSubmit?.();
@@ -69,7 +70,7 @@ export const TerminalDialog: React.FC<TerminalDialogProps> = ({
             onClick={() => dialog.hideDialog()}
             className="bg-black/40 top-0 left-0 right-0 bottom-0 fixed z-99 w-full h-full "
           />
-          <div className="z-100">
+          <div className="max-w-[380px] z-10000000 flex items-center justify-center w-full">
             {showChildrenOnly ? (
               children
             ) : (
