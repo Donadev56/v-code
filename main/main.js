@@ -57,7 +57,10 @@ const createWindow = () => {
   sftpManager.on("close", () => win.webContents.send("sftp:close"));
   sftpManager.on("error", (err) => win.webContents.send("sftp:error", err));
   sftpManager.on("end", () => win.webContents.send("sftp:end"));
-  sftpManager.on("ready", () => win.webContents.send("sftp:ready"));
+  sftpManager.on("ready", () => {
+    console.log("SFTP ready");
+    win.webContents.send("sftp:ready");
+  });
 };
 
 ipcMain.on("ssh:write", (_, data) => {

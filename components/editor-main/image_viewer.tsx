@@ -6,10 +6,10 @@ import {
   Uint8ArrayToString,
   Utf8ToBase64,
 } from "@/lib/utils";
-import { OpenedFile } from "@/types/types";
+import { FileRendererType, OpenedFile } from "@/types/types";
 import { BiError } from "react-icons/bi";
 
-export const ImageViewer = ({ file }: { file: OpenedFile }) => {
+export const ImageViewer = ({ file }: FileRendererType) => {
   const isFileAnImage = isImage(file.path);
   if (!isFileAnImage) {
     return (

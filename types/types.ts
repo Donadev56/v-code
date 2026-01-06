@@ -135,3 +135,10 @@ export interface ElectronStorage {
 
 export type TerminalState = "waiting" | "ready" | "executing" | "errored";
 export const buf = Buffer.alloc(0);
+
+export type FileRendererType = {
+  file: OpenedFile;
+  updateFileContent: (newValue: string | undefined) => void;
+};
+
+export type SupportedFileType = "image" | "pdf" | "text";

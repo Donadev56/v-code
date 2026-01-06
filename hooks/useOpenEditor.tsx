@@ -189,9 +189,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   }, [items, currentPath]);
 
   React.useEffect(() => {
-    if (sftpRef.current) {
-      const sftp = sftpRef.current;
+    if (listenerRegistered.current) {
+      return;
+    }
+    listenerRegistered.current = true;
+    const sftp = sftpRef.current;
 
+    if (sftp) {
       sftp.onClose(onClose);
 
       sftp.onEnd(onClose);
@@ -202,9 +206,14 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
       sftp.onReady(onReady);
     }
+
+    return () => {
+      sftp?.dispose();
+    };
   }, [sftpRef.current]);
 
   function onReady() {
+    console.log("SFTP server ready");
     toast.success("Connection established");
     const lastConfig = Object.values(localConfig).sort(
       (a, b) => b.config.updateTime - a.config.updateTime,
@@ -214,6 +223,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       openPath(lastConfig.paths[0]);
     }
   }
+
   function onClose() {
     () => {
       toast.error("SFTP closed");
@@ -285,9 +295,11 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       if (currentPath.trim().length === 0) {
         return;
       }
+      const key = `${openedFileKeyBase}:${currentPath}`;
+
       console.log("Saving files....");
 
-      await saveData(StringifyFile(openedFiles), localOpenedFileKey);
+      await saveData(StringifyFile(openedFiles), key);
     } catch (error: any) {
       console.error(error?.message);
       toast.error("Failed to save opened files", {

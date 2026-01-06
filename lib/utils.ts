@@ -1,4 +1,4 @@
-import { LOCAL_SSH_CONFIG, SSH_CONFIG } from "@/types/types";
+import { LOCAL_SSH_CONFIG, SSH_CONFIG, SupportedFileType } from "@/types/types";
 import { clsx, type ClassValue } from "clsx";
 import path from "path";
 import { twMerge } from "tailwind-merge";
@@ -127,6 +127,19 @@ export function StringifyFile(data: any) {
     }
     return value;
   });
+}
+
+export function getFileRendererTypeByPath(path: string): SupportedFileType {
+  const isFileImage = isImage(path);
+  const isFilePdf = isPdf(path);
+  if (isFileImage) {
+    return "image";
+  }
+  if (isFilePdf) {
+    return "pdf";
+  }
+
+  return "text";
 }
 export function getKeyFromConfig(config: SSH_CONFIG | LOCAL_SSH_CONFIG) {
   return `${config?.user}@${config?.host}`;

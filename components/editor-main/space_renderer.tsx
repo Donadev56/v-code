@@ -1,9 +1,15 @@
-import { OpenedFile } from "@/types/types";
+import { FileRendererType, OpenedFile, SupportedFileType } from "@/types/types";
 import { ImageViewer } from "./image_viewer";
-import { CodeEditor } from "./editor";
+import { CodeEditor, CodeEditorRenderer } from "./editor";
 import { GetMonacoLanguage } from "@/lib/files";
-import { isImage, isPdf, Uint8ArrayToString } from "@/lib/utils";
+import {
+  getFileRendererTypeByPath,
+  isImage,
+  isPdf,
+  Uint8ArrayToString,
+} from "@/lib/utils";
 import PdfViewer from "./pdf_viewer";
+import { JSX } from "react";
 
 export function EditorSpaceRenderer({
   file,
@@ -12,20 +18,15 @@ export function EditorSpaceRenderer({
   file: OpenedFile;
   updateFileContent: (newValue: string | undefined) => void;
 }) {
-  const isFileAnImage = isImage(file.path);
-  const isFilePdf = isPdf(file.path);
-  if (isFileAnImage) {
-    return <ImageViewer file={file} />;
-  }
-  if (isFilePdf) {
-    return <PdfViewer file={file} />;
-  }
+  const components: { [x: string]: (props: FileRendererType) => JSX.Element } =
+    {
+      image: ImageViewer,
+      text: PdfViewer,
+      pdf: CodeEditorRenderer,
+    };
 
-  return (
-    <CodeEditor
-      value={Uint8ArrayToString(file.content)}
-      language={GetMonacoLanguage(file.name)}
-      onChange={updateFileContent}
-    />
-  );
+  const fileType = getFileRendererTypeByPath(file.path);
+  const Component = components[fileType];
+
+  return <Component file={file} updateFileContent={updateFileContent} />;
 }
