@@ -94,6 +94,10 @@ class SSHManager extends EventEmitter {
             },
           });
         });
+
+        this.emit("ready", {
+          processId,
+        });
       });
     } catch (error) {
       this.emit("error", {

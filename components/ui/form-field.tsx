@@ -37,7 +37,7 @@ export const FormField: React.FC<FormFieldProps> = ({
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
           required={required}
-          className={`w-full bg-transparent rounded-lg px-3 py-2 text-sm focus:outline-none  ${className}`}
+          className={`w-full bg-transparent rounded-lg px-2 py-1.5 text-sm focus:outline-none  ${className}`}
         />
       </div>
     </div>

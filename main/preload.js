@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld("sshApi", {
   onData: (cb) => ipcRenderer.on("ssh:data", (_, data) => cb(data)),
 
   onError: (cb) => ipcRenderer.on("ssh:error", (_, err) => cb(err)),
+  onReady: (cb) => ipcRenderer.on("ssh:ready", (_, data) => cb(data)),
 
   connect: (config) => ipcRenderer.invoke("ssh:connect", config),
   dispose: (id) => ipcRenderer.invoke("ssh:dispose", id),

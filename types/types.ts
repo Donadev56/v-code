@@ -26,6 +26,7 @@ export interface SSHApi {
   write: (data: { cmd: string; processId: number }) => Promise<void> | void;
   onData: (callback: (data: SshData) => void) => void;
   onError: (callback: (error: SshData) => void) => void;
+  onReady: (callback: (data: { processId: number }) => void) => void;
   onConnected: (
     callback: ({ processId }: { processId: number }) => void,
   ) => void;
@@ -97,7 +98,7 @@ export type FileItem = {
   isFolder: boolean;
   children: string[];
   name: string;
-  data: { content?: string; path: string; sftpFile?: SftpFile };
+  data: { content?: string; path: string; sftpFile?: SftpFile; name?: string };
 };
 export interface IpcResultSuccess<T = void> {
   success: true;

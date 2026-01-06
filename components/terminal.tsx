@@ -28,6 +28,7 @@ export const TerminalComponent = ({ processId }: { processId: number }) => {
     addTerminal,
     onConnected,
     deleteTerminal,
+    currentPath,
   } = useOpenEditor();
   const listenersAttachedRef = useRef(false);
 
@@ -118,6 +119,15 @@ export const TerminalComponent = ({ processId }: { processId: number }) => {
     }
   }
 
+  function onReady({ processId: id }: { processId: number }) {
+    if (id === processId) {
+      console.log({
+        ready: processId,
+      });
+      if (currentPath.trim().length > 0) processCommand(`cd ${currentPath}`);
+    }
+  }
+
   const setupSSHConnection = () => {
     const terminal = termRef.current;
     if (!terminal || typeof window === "undefined") return;
@@ -133,6 +143,7 @@ export const TerminalComponent = ({ processId }: { processId: number }) => {
     sshApi.onConnected((data) => onConnected(data.processId));
     sshApi.onError(onError);
     sshApi.onData(onData);
+    sshApi.onReady(onReady);
 
     return () => deleteTerminal(processId);
   };

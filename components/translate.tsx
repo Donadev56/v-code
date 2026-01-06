@@ -1,12 +1,14 @@
 "use client";
+import { AnimatePresence, motion, type HTMLMotionProps } from "motion/react";
+import { PropsWithChildren } from "react";
 
-import { AnimatePresence, motion } from "framer-motion";
+type AnimatedDivProps = PropsWithChildren<
+  HTMLMotionProps<"div"> & {
+    condition: boolean;
+  }
+>;
 
-type MotionDivProps = React.ComponentProps<typeof motion.div>;
-interface AnimatedDiv extends MotionDivProps {
-  condition: boolean;
-}
-const TranslateY = ({ condition, ...props }: AnimatedDiv) => {
+const TranslateY = ({ condition, ...props }: any) => {
   return (
     <AnimatePresence>
       {condition && (
@@ -24,7 +26,7 @@ const TranslateY = ({ condition, ...props }: AnimatedDiv) => {
   );
 };
 
-const TranslateX = ({ condition, ...props }: AnimatedDiv) => {
+const TranslateX = ({ condition, ...props }: any) => {
   return (
     <AnimatePresence>
       {condition && (
@@ -42,7 +44,7 @@ const TranslateX = ({ condition, ...props }: AnimatedDiv) => {
   );
 };
 
-const Fade = ({ condition, ...props }: AnimatedDiv) => {
+const Fade = ({ condition, ...props }: any) => {
   return (
     <AnimatePresence>
       {condition && (
@@ -60,7 +62,7 @@ const Fade = ({ condition, ...props }: AnimatedDiv) => {
   );
 };
 
-const Scale = ({ condition, ...props }: AnimatedDiv) => {
+const Scale = ({ condition, ...props }: any) => {
   return (
     <AnimatePresence>
       {condition && (
@@ -78,7 +80,7 @@ const Scale = ({ condition, ...props }: AnimatedDiv) => {
   );
 };
 
-const HeightCollapse = ({ condition, ...props }: AnimatedDiv) => {
+const HeightCollapse = ({ condition, ...props }: any) => {
   return (
     <AnimatePresence initial={false}>
       {condition && (
@@ -96,7 +98,7 @@ const HeightCollapse = ({ condition, ...props }: AnimatedDiv) => {
     </AnimatePresence>
   );
 };
-const Blur = ({ ...props }: MotionDivProps) => {
+const Blur = ({ ...props }: any) => {
   return (
     <AnimatePresence>
       <motion.div

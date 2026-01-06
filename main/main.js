@@ -48,7 +48,9 @@ const createWindow = () => {
   sshManager.on("error", (err) => {
     win.webContents.send("ssh:error", err);
   });
-
+  sshManager.on("ready", (data) => {
+    win.webContents.send("ssh:ready", data);
+  });
   sshManager.on("connected", (data) => {
     win.webContents.send("ssh:connected", data);
   });

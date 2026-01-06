@@ -12,7 +12,7 @@ import {
 } from "@/lib/files";
 import { cn, getKeyFromConfig } from "@/lib/utils";
 import { FileItem, OpenedFile } from "@/types/types";
-import { FileIcon, PlusIcon, SearchIcon, Trash2, X } from "lucide-react";
+import {  PlusIcon, SearchIcon, Trash2, X } from "lucide-react";
 import React from "react";
 import { Panel, Separator } from "react-resizable-panels";
 import { AiTwotoneCode } from "react-icons/ai";
@@ -33,8 +33,9 @@ import { TopLoader } from "@/components/top_loader";
 import { useEditorDialog } from "@/hooks/useDialog";
 import { EditorBottomView } from "@/components/editor_bottom_view";
 import { EditorConfigPathsListView } from "@/components/editor_config_paths_view";
+import FileIcon from "@/components/ui/file_icon";
 
-export const EditorPage = () => {
+export default function EditorPage() {
   const [openedFiles, setOpenedFiles] = React.useState<{
     [name: string]: OpenedFile;
   }>({});
@@ -159,7 +160,7 @@ export const EditorPage = () => {
       if (data) {
         const content = data;
         const file = {
-          name: item.name,
+          name: item.data?.name || item.name,
           content: content,
           path: item.data.path,
         };
@@ -230,14 +231,9 @@ export const EditorPage = () => {
           <Panel minSize={"30%"}>
             <div className="w-full relative h-full">
               {Object.values(openedFiles).length > 0 && (
-                <div className="flex border-b  items-center overflow-x-scroll">
+                <div className="flex border-b scrollbar-hide items-center overflow-x-scroll">
                   {Object.values(openedFiles).map((e) => {
-                    let Icon = FileIcons[GetExtension(e.name)];
-                    const isCurrent = e.path === focusedFile.path;
-                    if (!Icon) {
-                      Icon = FileIcon;
-                    }
-                    const color = FileColors[GetExtension(e.name)];
+                    const isCurrent = focusedFile.path === e.path
 
                     return (
                       <div className="relative group ">
@@ -248,8 +244,8 @@ export const EditorPage = () => {
                             isCurrent && "border-t-primary",
                           )}
                         >
-                          <Icon size={16} color={color} />
-                          <div className="text-sm">{e.name} </div>
+                      <FileIcon size={16} filePath={e.path} />
+                           <div className="text-sm">{e.name} </div>
                         </div>
                         <X
                           onClick={() => removeFileFromBar(e)}
@@ -344,4 +340,4 @@ export const EditorPage = () => {
       <EditorBottomView />
     </div>
   );
-};
+}

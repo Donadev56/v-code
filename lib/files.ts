@@ -198,6 +198,184 @@ export const FileColors: Record<string, string> = {
   folder: "oklch(0.82 0.12 95)", // Pale honey
   folderOpen: "oklch(0.82 0.12 95)", // Pale honey
 };
+
+export interface FolderIconSet {
+  open: IconType;
+  closed: IconType;
+}
+
+export const FolderIcons: Record<string, FolderIconSet> = {
+  // Common project folders
+  src: { open: FaRegFolderOpen, closed: FaFolder },
+  public: { open: FaRegFolderOpen, closed: FaFolder },
+  components: { open: FaRegFolderOpen, closed: FaReact },
+  pages: { open: FaRegFolderOpen, closed: SiNextdotjs },
+  app: { open: FaRegFolderOpen, closed: SiNextdotjs },
+  api: { open: FaRegFolderOpen, closed: SiNodedotjs },
+  routes: { open: FaRegFolderOpen, closed: SiNodedotjs },
+  utils: { open: FaRegFolderOpen, closed: BiCode },
+  lib: { open: FaRegFolderOpen, closed: BiCode },
+  hooks: { open: FaRegFolderOpen, closed: FaReact },
+  context: { open: FaRegFolderOpen, closed: FaReact },
+  store: { open: FaRegFolderOpen, closed: SiVuedotjs },
+  redux: { open: FaRegFolderOpen, closed: FaReact },
+  models: { open: FaRegFolderOpen, closed: SiMongodb },
+  schemas: { open: FaRegFolderOpen, closed: SiGraphql },
+  types: { open: FaRegFolderOpen, closed: SiTypescript },
+  interfaces: { open: FaRegFolderOpen, closed: SiTypescript },
+
+  // Configuration folders
+  config: { open: FaRegFolderOpen, closed: SiYaml },
+  configurations: { open: FaRegFolderOpen, closed: SiYaml },
+  settings: { open: FaRegFolderOpen, closed: SiYaml },
+
+  // Build and deployment
+  dist: { open: FaRegFolderOpen, closed: SiVite },
+  build: { open: FaRegFolderOpen, closed: SiVite },
+  out: { open: FaRegFolderOpen, closed: SiNextdotjs },
+  docker: { open: FaRegFolderOpen, closed: SiDocker },
+  deployment: { open: FaRegFolderOpen, closed: SiDocker },
+  scripts: { open: FaRegFolderOpen, closed: FaPython },
+  bin: { open: FaRegFolderOpen, closed: FaPython },
+
+  // Testing
+  tests: { open: FaRegFolderOpen, closed: SiJest },
+  __tests__: { open: FaRegFolderOpen, closed: SiJest },
+  spec: { open: FaRegFolderOpen, closed: SiJest },
+  test: { open: FaRegFolderOpen, closed: SiJest },
+  testing: { open: FaRegFolderOpen, closed: SiJest },
+
+  // Documentation
+  docs: { open: FaRegFolderOpen, closed: FaMarkdown },
+  documentation: { open: FaRegFolderOpen, closed: FaMarkdown },
+  guides: { open: FaRegFolderOpen, closed: FaMarkdown },
+
+  // Assets
+  assets: { open: FaRegFolderOpen, closed: FaFileAlt },
+  images: { open: FaRegFolderOpen, closed: FaFileAlt },
+  icons: { open: FaRegFolderOpen, closed: FaFileAlt },
+  fonts: { open: FaRegFolderOpen, closed: FaFileAlt },
+  styles: { open: FaRegFolderOpen, closed: FaCss3Alt },
+  css: { open: FaRegFolderOpen, closed: FaCss3Alt },
+  scss: { open: FaRegFolderOpen, closed: FaSass },
+  sass: { open: FaRegFolderOpen, closed: FaSass },
+
+  // Node.js specific
+  node_modules: { open: FaRegFolderOpen, closed: SiNodedotjs },
+  modules: { open: FaRegFolderOpen, closed: SiNodedotjs },
+
+  // Version control
+  git: { open: FaRegFolderOpen, closed: SiGit },
+  github: { open: FaRegFolderOpen, closed: SiGit },
+  gitlab: { open: FaRegFolderOpen, closed: SiGit },
+
+  // Database
+  database: { open: FaRegFolderOpen, closed: SiPostgresql },
+  db: { open: FaRegFolderOpen, closed: SiPostgresql },
+  migrations: { open: FaRegFolderOpen, closed: SiMysql },
+  seeds: { open: FaRegFolderOpen, closed: SiMysql },
+
+  // Backend specific
+  controllers: { open: FaRegFolderOpen, closed: SiNodedotjs },
+  services: { open: FaRegFolderOpen, closed: SiNodedotjs },
+  middleware: { open: FaRegFolderOpen, closed: SiNodedotjs },
+  repositories: { open: FaRegFolderOpen, closed: SiMongodb },
+
+  // Frontend frameworks
+  views: { open: FaRegFolderOpen, closed: SiVuedotjs },
+  templates: { open: FaRegFolderOpen, closed: SiSvelte },
+  layouts: { open: FaRegFolderOpen, closed: SiNextdotjs },
+
+  // Default fallback
+  default: { open: FaRegFolderOpen, closed: FaFolder },
+};
+
+export const FolderColors: Record<string, string> = {
+  // Common project folders
+  src: "oklch(0.78 0.16 85)", // Soft gold
+  public: "oklch(0.75 0.14 120)", // Muted teal
+  components: "oklch(0.72 0.18 210)", // React blue
+  pages: "oklch(0.70 0.16 280)", // Next.js purple
+  app: "oklch(0.70 0.16 280)", // Next.js purple
+  api: "oklch(0.68 0.15 140)", // Node.js green
+  routes: "oklch(0.68 0.15 140)", // Node.js green
+  utils: "oklch(0.76 0.12 60)", // Utility amber
+  lib: "oklch(0.76 0.12 60)", // Utility amber
+  hooks: "oklch(0.72 0.18 210)", // React blue
+  context: "oklch(0.72 0.18 210)", // React blue
+  store: "oklch(0.70 0.15 160)", // Vuex green
+  redux: "oklch(0.72 0.18 210)", // React blue
+  models: "oklch(0.65 0.14 220)", // Database blue
+  schemas: "oklch(0.70 0.18 325)", // GraphQL pink
+  types: "oklch(0.60 0.16 245)", // TypeScript blue
+  interfaces: "oklch(0.60 0.16 245)", // TypeScript blue
+
+  // Configuration folders
+  config: "oklch(0.72 0.12 200)", // Config seafoam
+  configurations: "oklch(0.72 0.12 200)", // Config seafoam
+  settings: "oklch(0.72 0.12 200)", // Config seafoam
+
+  // Build and deployment
+  dist: "oklch(0.74 0.14 300)", // Build purple
+  build: "oklch(0.74 0.14 300)", // Build purple
+  out: "oklch(0.74 0.14 300)", // Build purple
+  docker: "oklch(0.65 0.14 235)", // Docker blue
+  deployment: "oklch(0.65 0.14 235)", // Docker blue
+  scripts: "oklch(0.70 0.14 200)", // Python blue
+  bin: "oklch(0.70 0.14 200)", // Python blue
+
+  // Testing
+  tests: "oklch(0.72 0.16 90)", // Test coral
+  __tests__: "oklch(0.72 0.16 90)", // Test coral
+  spec: "oklch(0.72 0.16 90)", // Test coral
+  test: "oklch(0.72 0.16 90)", // Test coral
+  testing: "oklch(0.72 0.16 90)", // Test coral
+
+  // Documentation
+  docs: "oklch(0.72 0.12 245)", // Documentation blue
+  documentation: "oklch(0.72 0.12 245)", // Documentation blue
+  guides: "oklch(0.72 0.12 245)", // Documentation blue
+
+  // Assets
+  assets: "oklch(0.75 0.10 40)", // Asset orange
+  images: "oklch(0.75 0.10 40)", // Asset orange
+  icons: "oklch(0.75 0.10 40)", // Asset orange
+  fonts: "oklch(0.75 0.10 40)", // Asset orange
+  styles: "oklch(0.63 0.16 260)", // CSS blue
+  css: "oklch(0.63 0.16 260)", // CSS blue
+  scss: "oklch(0.68 0.14 330)", // Sass pink
+  sass: "oklch(0.68 0.14 330)", // Sass pink
+
+  // Node.js specific
+  node_modules: "oklch(0.68 0.15 140)", // Node green
+  modules: "oklch(0.68 0.15 140)", // Node green
+
+  // Version control
+  git: "oklch(0.3618 0.111 0)", // Git charcoal
+  github: "oklch(0.3618 0.111 0)", // Git charcoal
+  gitlab: "oklch(0.3618 0.111 0)", // Git charcoal
+
+  // Database
+  database: "oklch(0.65 0.14 220)", // Database blue
+  db: "oklch(0.65 0.14 220)", // Database blue
+  migrations: "oklch(0.68 0.12 180)", // Migration teal
+  seeds: "oklch(0.68 0.12 180)", // Migration teal
+
+  // Backend specific
+  controllers: "oklch(0.70 0.14 30)", // Controller amber
+  services: "oklch(0.70 0.14 30)", // Service amber
+  middleware: "oklch(0.70 0.14 30)", // Middleware amber
+  repositories: "oklch(0.65 0.14 220)", // Repository blue
+
+  // Frontend frameworks
+  views: "oklch(0.70 0.15 160)", // Vue green
+  templates: "oklch(0.72 0.16 20)", // Svelte coral
+  layouts: "oklch(0.70 0.16 280)", // Layout purple
+
+  // Default fallback
+  default: "oklch(0.82 0.12 95)", // Default folder honey
+};
+
 // Helper function to get icon for a filename
 export const getFileIcon = (filename: string): IconType => {
   const extension = filename.split(".").pop()?.toLowerCase() || "default";
@@ -208,6 +386,22 @@ export const getFileIcon = (filename: string): IconType => {
 export const getFileColor = (filename: string): string => {
   const extension = filename.split(".").pop()?.toLowerCase() || "default";
   return FileColors[extension] || FileColors.default;
+};
+
+// Helper function to get icon for a folder name
+export const getFolderIcon = (
+  folderName: string,
+  isOpen: boolean = false,
+): IconType => {
+  const normalizedName = folderName.toLowerCase();
+  const folderIconSet = FolderIcons[normalizedName] || FolderIcons.default;
+  return isOpen ? folderIconSet.open : folderIconSet.closed;
+};
+
+// Helper function to get color for a folder name
+export const getFolderColor = (folderName: string): string => {
+  const normalizedName = folderName.toLowerCase();
+  return FolderColors[normalizedName] || FolderColors.default;
 };
 
 export const GetExtension = (fileName: string) => {
@@ -230,6 +424,8 @@ export const GetMonacoLanguage = (fileName: string) => {
       return "html";
     case "css":
       return "css";
+    case "mjs":
+      return "js";
     default:
       return ext;
   }

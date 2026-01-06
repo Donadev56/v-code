@@ -184,7 +184,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       localData[key].paths = [];
     }
 
-    localData[key].paths.push(path);
+    localData[key].paths = [path, ...localData[key].paths];
     localData[key].paths = Array.from(new Set(localData[key].paths));
 
     saveData(localData);
@@ -278,9 +278,15 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
           throw result.error;
         }
         setIsSftpConnected(true);
+        const lastConfig = Object.values(localConfig).sort(
+          (a, b) => b.config.updateTime - a.config.updateTime,
+        )[0];
+        if (lastConfig) {
+          openPath(lastConfig.paths[0]);
+        }
       }
     } catch (error: any) {
-      console.error(error);
+      console.error(error?.message);
       toast.error("Failed to connect", {
         description: (error as any)?.message || String(error),
       });
@@ -338,8 +344,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       if (config) {
         await Promise.all([connect(conf), connectSftp(conf)]);
       }
-    } catch (error) {
-      console.log(error);
+    } catch (error: any) {
+      console.error(error?.message);
     } finally {
       setIsLoading(false);
     }
@@ -390,19 +396,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       const data = await readFile(path);
       if (data) {
         setItems((prev) => {
-          const targetFile = Object.values(items).find(
-            (e) => e.data.path === path,
-          );
-          if (targetFile) {
-            return {
-              ...prev,
-              [targetFile.name]: {
-                ...prev[targetFile.name],
-                data: { ...prev[targetFile.name].data, content: data },
-              },
-            };
-          }
-          return prev;
+          return {
+            ...prev,
+            [path]: {
+              ...prev[path],
+              data: { ...prev[path].data, content: data },
+            },
+          };
         });
 
         return data;
@@ -451,26 +451,30 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         files["root"] = {
           index: "root",
           isFolder: true,
-          children: data.map((e) => e.name),
+          children: data.map((e) => GetPath(path, e.name)),
           name: "root",
           data: { path: "" },
         };
 
         for (const item of data) {
-          const key = item.name;
+          const fullPath = GetPath(path, item.name);
 
-          files[key] = {
-            index: item.name,
+          files[fullPath] = {
+            index: fullPath,
             isFolder: item.type === "d",
             children: [],
-            data: { sftpFile: item, path: GetPath(path, item.name) },
+            data: { sftpFile: item, path: fullPath, name: item.name },
             name: item.name,
           };
         }
       }
       return files;
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      if (error?.message === "read ECONNRESET") {
+        setIsSftpConnected(false);
+        if (config) connectSftp(config);
+      }
+      console.error(error?.message);
       toast.error((error as any)?.message ?? String(error));
     }
   }
@@ -493,8 +497,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
             return {
               ...prev,
               ...files,
-              [file.name]: {
-                ...prev[file.name],
+              [file.data.path]: {
+                ...prev[file.data.path],
                 children,
               },
             };
