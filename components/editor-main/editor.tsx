@@ -3,7 +3,7 @@ import OPENCODE_THEME from "../themes/openscan.json";
 import React from "react";
 import { Uint8ArrayToString } from "@/lib/utils";
 import { GetMonacoLanguage } from "@/lib/files";
-import { FileRendererType } from "@/types/types";
+import { buf, FileRendererType } from "@/types/types";
 
 export const CodeEditor = ({ ...props }: EditorProps) => {
   const monaco = useMonaco();
@@ -27,11 +27,16 @@ export const CodeEditorRenderer = ({
   file,
   updateFileContent,
 }: FileRendererType) => {
+  console.log({ file });
   return (
     <CodeEditor
-      value={Uint8ArrayToString(file.content)}
+      value={
+        file.content === buf || file.content.length === 0
+          ? ""
+          : Uint8ArrayToString(file.content)
+      }
       language={GetMonacoLanguage(file.name)}
-      onChange={updateFileContent}
+      onChange={(newValue) => updateFileContent({ file, newValue })}
     />
   );
 };

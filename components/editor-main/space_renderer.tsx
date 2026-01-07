@@ -21,4 +21,3 @@ export function EditorSpaceRenderer({
 
   return <Component file={file} updateFileContent={updateFileContent} />;
 }
-

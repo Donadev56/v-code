@@ -5,6 +5,7 @@ import {
   ElectronStorage,
   FileContent,
   FileItem,
+  FocusedFileType,
   LOCAL_SSH_CONFIG,
   OpenedFile,
   OpenEditorContextType,
@@ -32,7 +33,9 @@ const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
 );
 
 export function OpenEditorProvider({ children }: { children: ReactNode }) {
-  const [focusedFile, setFocusedFile] = React.useState<OpenedFile | null>(null);
+  const [focusedFile, setFocusedFile] = React.useState<FocusedFileType | null>(
+    null,
+  );
   const [isTerminalVisible, setIsTerminalVisible] = React.useState(false);
   const [config, setConfig] = React.useState<SSH_CONFIG | null>(null);
   const localConfigKey = "local-config-list-0.01";
@@ -50,8 +53,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     [x: string]: FileItem;
   }>({});
   const [isLoading, setIsLoading] = React.useState(false);
-  const [lastEditTime , setLastEditTime] = React.useState(0)
-  const [timeWithoutTyping , setTimeWithoutTyping] = React.useState(0)
+  const [lastEditTime, setLastEditTime] = React.useState(0);
+  const [timeWithoutTyping, setTimeWithoutTyping] = React.useState(0);
 
   const sftpRef = React.useRef<SftpApi | null>(null);
   const [lastFileVersion, setLastFileVersion] = React.useState<{
@@ -74,8 +77,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const openedFileKeyBase = "local:opened:v0.05:file:for:";
-  const focusFileKeyBase = "local:focus:file:v0.05:file:for:";
+  const openedFileKeyBase = "local:opened:v0.06:file:for:";
+  const focusFileKeyBase = "local:focus:file:v0.06:file:for:";
 
   const localItemsFileKey = React.useMemo(() => {
     return `local:items:file:for:${currentPath}`;
@@ -103,21 +106,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    saveOpenedFiles();
-    const openedFilesList = Object.values(openedFiles);
-    if (openedFilesList.length > 0 && !focusedFile) {
-      setFocusedFile(openedFilesList[0]);
-    }
-    updateFocusedFile();
-  }, [openedFiles, currentPath]);
-
-  React.useEffect(() => {
     saveFocusedFile();
   }, [focusedFile]);
 
   React.useEffect(() => {
-    saveItems();
-    updateOpenedFiles();
+    //saveItems();
+    updateFocusedFile();
+    saveOpenedFiles();
   }, [items, currentPath]);
 
   React.useEffect(() => {
@@ -181,42 +176,18 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       });
     }
   }
-  
-  function updateOpenedFiles() {
-    if (!items) {
-      return;
-    }
-    const files = Object.values(openedFiles);
-    const newFileList: { [x: string]: OpenedFile } = {};
-
-    for (const file of files) {
-      const key = file.path;
-      const itemFile = items[key];
-      if (!itemFile) {
-        newFileList[key] = {
-          ...file,
-        };
-        continue;
-      }
-      const content = itemFile.data.content;
-      newFileList[key] = {
-        ...file,
-        content: content || file.content,
-      };
-    }
-    setOpenedFiles(newFileList);
-  }
 
   function updateFocusedFile() {
     if (focusedFile) {
-      const focusedFileKey = focusedFile.path;
-      const focusedFileNewVersion = openedFiles[focusedFileKey];
-      if (!focusedFileNewVersion) {
+      const focusedFileKey = focusedFile?.path;
+      const fileNewVersion = items[focusedFileKey];
+      if (!fileNewVersion) {
         return;
       }
       setFocusedFile({
-        ...focusedFileNewVersion,
-        content: focusedFileNewVersion.content,
+        name: fileNewVersion.name,
+        path: fileNewVersion.data.path,
+        content: fileNewVersion.data.content || buf,
       });
     }
   }
@@ -248,13 +219,14 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       }
       console.log("Saving files....");
       const key = `${focusFileKeyBase}:${currentPath}`;
+      if (!focusedFile.content || focusedFile.content === buf) {
+        console.error("Content not found");
+        return;
+      }
 
       await saveData(StringifyFile(focusedFile), key);
     } catch (error: any) {
       console.error(error?.message);
-      toast.error("Failed to save focus files", {
-        description: (error as any)?.message || String(error),
-      });
     }
   }
 
@@ -528,7 +500,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       const key = getKeyFromConfig(config!);
       addPath(key, path);
       setOpenedFiles({});
-      setFocusedFile(null)
+      setFocusedFile(null);
 
       loadSavedData(path);
     } catch (error) {
@@ -558,11 +530,19 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
           }
           return parsed;
         });
+
+        Object.values(parsed).forEach((file) => {
+          loadFileWithPath(file.path, path);
+        });
       }
 
       if (focusFileString) {
         const parsed = ParseFile(focusFileString) as OpenedFile;
-        setFocusedFile(parsed);
+        const content = items[parsed.path]?.data?.content;
+        if (!content) {
+          return;
+        }
+        setFocusedFile({ ...parsed, content });
       }
     } catch (error) {
       console.error({ error });
@@ -571,12 +551,14 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
   async function updateFile(path: string, silent = false) {
     try {
+      console.log({ path });
       if (!silent) {
         setIsLoading(true);
       }
       const data = await readFile(path);
       if (data) {
         setItems((prev) => {
+        console.log({data : prev[path]})
           return {
             ...prev,
             [path]: {
@@ -640,7 +622,6 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
         for (const item of data) {
           const fullPath = GetPath(path, item.name);
-
           files[fullPath] = {
             index: fullPath,
             isFolder: item.type === "d",
@@ -702,7 +683,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     file,
     newValue,
   }: {
-    file: OpenedFile;
+    file: {
+      path: string;
+      content: FileContent;
+    };
     newValue: string | undefined;
   }) {
     if (!newValue) {
@@ -763,10 +747,58 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         },
       };
     });
-
-
   }
 
+  async function loadFileWithPath(path: string, mainPath = currentPath) {
+    try {
+      const actualPath = mainPath.split("");
+      if (actualPath.length === 0) {
+        return;
+      }
+      const targetPath = path.split("");
+      let changeBasePath: string = "";
+      for (let i = 0; i < targetPath.length; i++) {
+        if (
+          !actualPath[i] ||
+          actualPath[i].toLowerCase() !== targetPath[i].toLowerCase()
+        ) {
+          changeBasePath = targetPath.slice(i, targetPath.length).join("");
+          break;
+        }
+      }
+
+      const targets = changeBasePath.split("/");
+      console.log({ changeBasePath });
+      console.log({ targets });
+      let lastTargetPath = mainPath;
+      const targetPathList: string[] = [];
+      for (let i = 0; i < targets.length; i++) {
+        if (targets[i].length === 0) {
+          lastTargetPath = lastTargetPath + "/";
+          continue;
+        }
+        const fullTargetPath = lastTargetPath.endsWith("/")
+          ? lastTargetPath + targets[i]
+          : lastTargetPath + "/" + targets[i];
+        console.log(fullTargetPath);
+        lastTargetPath = fullTargetPath;
+        targetPathList.push(fullTargetPath);
+      }
+
+      for (let i = 0; i < targetPathList.length; i++) {
+        const filePath = targetPathList[i];
+        if (i == targetPathList.length - 1) {
+          console.log("updating file", filePath);
+          await updateFile(filePath);
+        } else {
+          console.log("Updating folder...", filePath);
+          await updateFolder(filePath);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   const state: OpenEditorContextType = {
     openedFiles,
@@ -806,7 +838,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     lastEditTime,
     setLastEditTime,
     setTimeWithoutTyping,
-    timeWithoutTyping
+    timeWithoutTyping,
   };
 
   return (
@@ -823,4 +855,3 @@ export function useOpenEditor() {
   }
   return context;
 }
-

@@ -1,7 +1,12 @@
 export type OpenedFile = {
   name: string;
-  content: FileContent;
   path: string;
+};
+
+export type FocusedFileType = {
+  name: string;
+  path: string;
+  content: FileContent;
 };
 import { Terminal } from "@xterm/xterm";
 
@@ -82,7 +87,6 @@ export interface SftpApi {
     path: string;
     content: FileContent;
   }) => Promise<{ success: boolean; error: any }>;
-
 }
 
 export interface TerminalConfig {
@@ -143,20 +147,20 @@ export type TerminalState = "waiting" | "ready" | "executing" | "errored";
 export const buf = Buffer.alloc(0);
 
 export type FileRendererType = {
-  file: OpenedFile;
+  file: FocusedFileType;
   updateFileContent({
     file,
     newValue,
   }: {
-    file: OpenedFile;
+    file: FocusedFileType;
     newValue: string | undefined;
   }): void;
 };
 
 export type SupportedFileType = "image" | "pdf" | "text";
 export interface OpenEditorContextType {
-  focusedFile: OpenedFile | null;
-  setFocusedFile: React.Dispatch<React.SetStateAction<OpenedFile | null>>;
+  focusedFile: FocusedFileType | null;
+  setFocusedFile: React.Dispatch<React.SetStateAction<FocusedFileType | null>>;
   isTerminalVisible: boolean;
   setIsTerminalVisible: React.Dispatch<React.SetStateAction<boolean>>;
   terminalState: {
@@ -240,7 +244,10 @@ export interface OpenEditorContextType {
     file,
     newValue,
   }: {
-    file: OpenedFile;
+    file: {
+      path: string;
+      content: FileContent;
+    };
     newValue: string | undefined;
   }): Promise<
     | {
@@ -249,9 +256,8 @@ export interface OpenEditorContextType {
       }
     | undefined
   >;
-    setLastEditTime: React.Dispatch<React.SetStateAction<number>>
-  lastEditTime: number
-   setTimeWithoutTyping: React.Dispatch<React.SetStateAction<number>>
-   timeWithoutTyping: number
+  setLastEditTime: React.Dispatch<React.SetStateAction<number>>;
+  lastEditTime: number;
+  setTimeWithoutTyping: React.Dispatch<React.SetStateAction<number>>;
+  timeWithoutTyping: number;
 }
-

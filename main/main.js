@@ -169,12 +169,12 @@ ipcMain.handle("storage:setKey", (event, key, value) => {
 
 ipcMain.handle("storage:getKey", (event, key, defaultValue) => {
   try {
-    console.log("Getting data")
-    const startTime = Date.now()
+    console.log("Getting data");
+    const startTime = Date.now();
     const value = storageManager.getKey(key, defaultValue);
-    const endTime = Date.now()
-    const timeElapsed = endTime - startTime
-    console.log({seconds : timeElapsed / 1000, key})
+    const endTime = Date.now();
+    const timeElapsed = endTime - startTime;
+    console.log({ seconds: timeElapsed / 1000, key });
 
     return { success: true, value };
   } catch (err) {

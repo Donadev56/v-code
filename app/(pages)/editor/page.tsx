@@ -63,7 +63,7 @@ export default function EditorPage() {
     setOpenedFiles,
     writeFile,
     lastEditTime,
-    setLastEditTime
+    setLastEditTime,
   } = useOpenEditor();
   const [currentTerminalId, setCurrentTerminalId] = React.useState(0);
   const [isVisible, setVisible] = React.useState(false);
@@ -103,11 +103,13 @@ export default function EditorPage() {
     if (Object.values(rest).length === 0) {
       return;
     }
-    setFocusedFile(
-      Object.values(rest).toReversed()[
+
+    setFocusedFile({
+      ...Object.values(rest).toReversed()[
         lastElementIndex < 0 ? 0 : lastElementIndex
       ],
-    );
+      content: items[file.path]?.data?.content || buf,
+    });
   }
 
   async function updateFileContent(data: {
@@ -115,7 +117,14 @@ export default function EditorPage() {
     newValue: string | undefined;
   }) {
     try {
-      await writeFile(data);
+      const content = items[data.file.path]?.data?.content || buf;
+      await writeFile({
+        file: {
+          ...data.file,
+          content,
+        },
+        newValue: data.newValue,
+      });
     } catch (error) {
       console.log(error);
     }
@@ -247,11 +256,14 @@ export default function EditorPage() {
                 <div className="flex border-b z-1 relative bg-background/20 backdrop-blur-2xl scrollbar-hide items-center overflow-x-scroll">
                   {Object.values(openedFiles).map((e) => {
                     const isCurrent = focusedFile?.path === e.path;
+                    const content = items[e.path]?.data?.content;
 
                     return (
                       <div className="relative group ">
                         <div
-                          onClick={() => setFocusedFile(e)}
+                          onClick={() =>
+                            setFocusedFile({ ...e, content: content || buf })
+                          }
                           className={cn(
                             "px-4 py-1.5 w-full  text-nowrap pr-8 max-h-8.75 cursor-pointer hover:bg-muted/20 transition-all flex items-center gap-2  border",
                             isCurrent && "border-t-primary",
@@ -271,7 +283,7 @@ export default function EditorPage() {
                 </div>
               )}
               <div className="w-full relative h-full">
-                {focusedFile && focusedFile?.content.length > 0 ? (
+                {focusedFile ? (
                   <EditorSpaceRenderer
                     updateFileContent={updateFileContent}
                     file={focusedFile}

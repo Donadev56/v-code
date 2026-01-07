@@ -48,9 +48,7 @@ class SFTPManager extends EventEmitter {
 
       await fs.writeFile(tmpLocal, content);
 
-      const remoteTmp = 
-      
-      `${remotePath}.tmp`;
+      const remoteTmp = `${remotePath}.tmp`;
 
       await this.sftp.put(tmpLocal, remoteTmp);
       await this.sftp.delete(remotePath);
