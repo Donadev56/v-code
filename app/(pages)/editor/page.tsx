@@ -61,6 +61,9 @@ export default function EditorPage() {
     updateFolder,
     openedFiles,
     setOpenedFiles,
+    writeFile,
+    lastEditTime,
+    setLastEditTime
   } = useOpenEditor();
   const [currentTerminalId, setCurrentTerminalId] = React.useState(0);
   const [isVisible, setVisible] = React.useState(false);
@@ -107,19 +110,15 @@ export default function EditorPage() {
     );
   }
 
-  function updateFileContent(newValue: string | undefined) {
-    setFocusedFile((prev) => {
-      if (!prev) {
-        return null;
-      }
-      if (!newValue) {
-        return prev;
-      }
-      return {
-        ...prev,
-        content: fromString(newValue, "utf-8"),
-      };
-    });
+  async function updateFileContent(data: {
+    file: OpenedFile;
+    newValue: string | undefined;
+  }) {
+    try {
+      await writeFile(data);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async function addTerm() {

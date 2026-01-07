@@ -1,6 +1,8 @@
 import SftpClient from "ssh2-sftp-client";
 import path from "path";
 import EventEmitter from "events";
+import os from "os";
+import fs from "fs/promises";
 
 class SFTPManager extends EventEmitter {
   constructor() {
@@ -35,6 +37,27 @@ class SFTPManager extends EventEmitter {
       return { connected: true, error: null };
     } catch (error) {
       return { error, connected: false };
+    }
+  }
+
+  async writeFile(remotePath, content) {
+    try {
+      if (!this.isConnected) throw new Error("Not connected");
+
+      const tmpLocal = path.join(os.tmpdir(), path.basename(remotePath));
+
+      await fs.writeFile(tmpLocal, content);
+
+      const remoteTmp = 
+      
+      `${remotePath}.tmp`;
+
+      await this.sftp.put(tmpLocal, remoteTmp);
+      await this.sftp.delete(remotePath);
+      await this.sftp.rename(remoteTmp, remotePath);
+      return { success: true, error: null };
+    } catch (error) {
+      return { success: false, error };
     }
   }
 

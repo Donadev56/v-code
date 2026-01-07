@@ -7,6 +7,7 @@ import {
   FileItem,
   LOCAL_SSH_CONFIG,
   OpenedFile,
+  OpenEditorContextType,
   SftpApi,
   SSH_CONFIG,
   SSHApi,
@@ -24,83 +25,7 @@ import {
   StringifyFile,
 } from "@/lib/utils";
 import { toast } from "sonner";
-import { toString } from "uint8arrays/to-string";
 import { fromString } from "uint8arrays/from-string";
-
-interface OpenEditorContextType {
-  focusedFile: OpenedFile | null;
-  setFocusedFile: React.Dispatch<React.SetStateAction<OpenedFile | null>>;
-  isTerminalVisible: boolean;
-  setIsTerminalVisible: React.Dispatch<React.SetStateAction<boolean>>;
-  terminalState: {
-    [x: string]: {
-      isConnected: boolean;
-      state: TerminalState;
-    };
-  };
-  setTerminalState: React.Dispatch<
-    React.SetStateAction<{
-      [x: string]: {
-        isConnected: boolean;
-        state: TerminalState;
-      };
-    }>
-  >;
-  terminal: {
-    [x: string]: Terminal;
-  };
-  addTerminal(terminal: Terminal, processId: number): void;
-  onConnected: (processId: number) => void;
-  activeTerminalIds: number[];
-  addConnection(config?: SSH_CONFIG): Promise<{
-    connected: boolean;
-    error: Error | null;
-    process: {
-      processId: number;
-    };
-  }>;
-  deleteTerminal(processId: number): Promise<{
-    success: boolean;
-    processId: number;
-  }>;
-  isSftpConnected: boolean;
-  setCurrentPath: React.Dispatch<React.SetStateAction<string>>;
-  currentPath: string;
-  openPath(path: string): Promise<void>;
-  setItems: React.Dispatch<React.SetStateAction<Record<string, FileItem>>>;
-  items: Record<string, FileItem>;
-  updateFile(path: string, silent?: boolean): Promise<FileContent | undefined>;
-  readFile(path: string): Promise<FileContent | undefined>;
-  getPathFiles(path: string): Promise<Record<string, FileItem> | undefined>;
-  config: SSH_CONFIG | null;
-  setConfig: React.Dispatch<React.SetStateAction<SSH_CONFIG | null>>;
-  connectServer: () => Promise<void>;
-  isLoading: boolean;
-  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  localConfig: {
-    [x: string]: {
-      config: LOCAL_SSH_CONFIG;
-      paths: string[];
-    };
-  };
-  setLocalConfig: React.Dispatch<
-    React.SetStateAction<{
-      [x: string]: {
-        config: LOCAL_SSH_CONFIG;
-        paths: string[];
-      };
-    }>
-  >;
-  updateFolder(path: string): Promise<void>;
-  openedFiles: {
-    [name: string]: OpenedFile;
-  };
-  setOpenedFiles: React.Dispatch<
-    React.SetStateAction<{
-      [name: string]: OpenedFile;
-    }>
-  >;
-}
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
   undefined,
@@ -121,9 +46,17 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
   const [isSftpConnected, setIsSftpConnected] = React.useState(false);
   const [currentPath, setCurrentPath] = React.useState("");
-  const [items, setItems] = React.useState<Record<string, FileItem>>({});
+  const [items, setItems] = React.useState<{
+    [x: string]: FileItem;
+  }>({});
   const [isLoading, setIsLoading] = React.useState(false);
+  const [lastEditTime , setLastEditTime] = React.useState(0)
+  const [timeWithoutTyping , setTimeWithoutTyping] = React.useState(0)
+
   const sftpRef = React.useRef<SftpApi | null>(null);
+  const [lastFileVersion, setLastFileVersion] = React.useState<{
+    [x: string]: FileContent;
+  }>({});
   const [openedFiles, setOpenedFiles] = React.useState<{
     [name: string]: OpenedFile;
   }>({});
@@ -144,9 +77,6 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   const openedFileKeyBase = "local:opened:v0.05:file:for:";
   const focusFileKeyBase = "local:focus:file:v0.05:file:for:";
 
-  const localOpenedFileKey = React.useMemo(() => {
-    return `${openedFileKeyBase}${currentPath}`;
-  }, [currentPath]);
   const localItemsFileKey = React.useMemo(() => {
     return `local:items:file:for:${currentPath}`;
   }, [currentPath]);
@@ -178,6 +108,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     if (openedFilesList.length > 0 && !focusedFile) {
       setFocusedFile(openedFilesList[0]);
     }
+    updateFocusedFile();
   }, [openedFiles, currentPath]);
 
   React.useEffect(() => {
@@ -186,6 +117,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
   React.useEffect(() => {
     saveItems();
+    updateOpenedFiles();
   }, [items, currentPath]);
 
   React.useEffect(() => {
@@ -249,6 +181,45 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       });
     }
   }
+  
+  function updateOpenedFiles() {
+    if (!items) {
+      return;
+    }
+    const files = Object.values(openedFiles);
+    const newFileList: { [x: string]: OpenedFile } = {};
+
+    for (const file of files) {
+      const key = file.path;
+      const itemFile = items[key];
+      if (!itemFile) {
+        newFileList[key] = {
+          ...file,
+        };
+        continue;
+      }
+      const content = itemFile.data.content;
+      newFileList[key] = {
+        ...file,
+        content: content || file.content,
+      };
+    }
+    setOpenedFiles(newFileList);
+  }
+
+  function updateFocusedFile() {
+    if (focusedFile) {
+      const focusedFileKey = focusedFile.path;
+      const focusedFileNewVersion = openedFiles[focusedFileKey];
+      if (!focusedFileNewVersion) {
+        return;
+      }
+      setFocusedFile({
+        ...focusedFileNewVersion,
+        content: focusedFileNewVersion.content,
+      });
+    }
+  }
   async function saveItems() {
     try {
       if (Object.values(items).length === 0) {
@@ -297,9 +268,9 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       }
       const key = `${openedFileKeyBase}:${currentPath}`;
 
-      console.log("Saving files....");
+      const fileString = StringifyFile(openedFiles);
 
-      await saveData(StringifyFile(openedFiles), key);
+      await saveData(fileString, key);
     } catch (error: any) {
       console.error(error?.message);
       toast.error("Failed to save opened files", {
@@ -557,6 +528,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       const key = getKeyFromConfig(config!);
       addPath(key, path);
       setOpenedFiles({});
+      setFocusedFile(null)
 
       loadSavedData(path);
     } catch (error) {
@@ -575,8 +547,6 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         getData(openedFileKey),
         getData(focusedFileKey),
       ]);
-
-      console.log({ oFilesString, focusFileString });
 
       if (oFilesString) {
         const parsed = ParseFile(oFilesString) as {
@@ -728,6 +698,76 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function writeFile({
+    file,
+    newValue,
+  }: {
+    file: OpenedFile;
+    newValue: string | undefined;
+  }) {
+    if (!newValue) {
+      return;
+    }
+
+    try {
+      const newContent: FileContent = fromString(newValue, "utf-8");
+      const sftp = sftpRef.current;
+      if (!sftp) {
+        return;
+      }
+      const itemFile = items[file.path];
+      if (!itemFile) {
+        return;
+      }
+      setLastFileVersion((prev) => ({ ...prev, [file.path]: file.content }));
+      const save = await sftp.writeFile({
+        path: file.path,
+        content: newContent,
+      });
+
+      if (save.error) {
+        if (save.error instanceof Error) {
+          throw save.error;
+        }
+        throw new Error(save.error);
+      }
+      updateItemFileContent(file.path, newContent);
+      setLastFileVersion((prev) => ({ ...prev, [file.path]: newContent }));
+      setFocusedFile((prev) => {
+        if (!prev) {
+          return null;
+        }
+        return {
+          ...prev,
+          content: newContent,
+        };
+      });
+
+      return save;
+    } catch (error) {
+      console.error(error);
+      toast.error("Error while saving file", {
+        description: (error as any)?.message ?? String(error),
+      });
+    }
+  }
+
+  function updateItemFileContent(filePath: string, content: FileContent) {
+    setItems((prev) => {
+      const targetItem = prev[filePath];
+      return {
+        ...prev,
+        [filePath]: {
+          ...targetItem,
+          data: { ...targetItem.data, content: content },
+        },
+      };
+    });
+
+
+  }
+
+
   const state: OpenEditorContextType = {
     openedFiles,
     setOpenedFiles,
@@ -760,6 +800,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     isLoading,
     setIsLoading,
     updateFolder,
+    lastFileVersion,
+    setLastFileVersion,
+    writeFile,
+    lastEditTime,
+    setLastEditTime,
+    setTimeWithoutTyping,
+    timeWithoutTyping
   };
 
   return (
@@ -776,3 +823,4 @@ export function useOpenEditor() {
   }
   return context;
 }
+

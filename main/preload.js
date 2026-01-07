@@ -31,11 +31,12 @@ contextBridge.exposeInMainWorld("sftpApi", {
   list: (path) => ipcRenderer.invoke("sftp:list", path),
   isConnected: () => ipcRenderer.invoke("sftp:isConnected"),
   readFile: (path) => ipcRenderer.invoke("sftp:read_file", path),
+  writeFile: (data) => ipcRenderer.invoke("sftp:write", data),
   // Events
-  onClose: (cb) => ipcRenderer.on("sftp:close", cb),
-  onEnd: (cb) => ipcRenderer.on("sftp:end", cb),
-  onReady: (cb) => ipcRenderer.on("sftp:ready", cb),
-  onError: (cb) => ipcRenderer.on("sftp:error", (_, err) => cb(err)),
+  onClose: (fn) => ipcRenderer.on("sftp:close", fn),
+  onEnd: (fn) => ipcRenderer.on("sftp:end", fn),
+  onReady: (fn) => ipcRenderer.on("sftp:ready", fn),
+  onError: (fn) => ipcRenderer.on("sftp:error", (_, err) => fn(err)),
 });
 
 contextBridge.exposeInMainWorld("windowAPI", {

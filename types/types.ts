@@ -3,6 +3,7 @@ export type OpenedFile = {
   content: FileContent;
   path: string;
 };
+import { Terminal } from "@xterm/xterm";
 
 export type FileContent = Uint8Array;
 
@@ -77,6 +78,11 @@ export interface SftpApi {
   onClose: (callback: () => void) => void;
   onEnd: (callback: () => void) => void;
   onError: (callback: (error: any) => void) => void;
+  writeFile: (data: {
+    path: string;
+    content: FileContent;
+  }) => Promise<{ success: boolean; error: any }>;
+
 }
 
 export interface TerminalConfig {
@@ -138,7 +144,114 @@ export const buf = Buffer.alloc(0);
 
 export type FileRendererType = {
   file: OpenedFile;
-  updateFileContent: (newValue: string | undefined) => void;
+  updateFileContent({
+    file,
+    newValue,
+  }: {
+    file: OpenedFile;
+    newValue: string | undefined;
+  }): void;
 };
 
 export type SupportedFileType = "image" | "pdf" | "text";
+export interface OpenEditorContextType {
+  focusedFile: OpenedFile | null;
+  setFocusedFile: React.Dispatch<React.SetStateAction<OpenedFile | null>>;
+  isTerminalVisible: boolean;
+  setIsTerminalVisible: React.Dispatch<React.SetStateAction<boolean>>;
+  terminalState: {
+    [x: string]: {
+      isConnected: boolean;
+      state: TerminalState;
+    };
+  };
+  setTerminalState: React.Dispatch<
+    React.SetStateAction<{
+      [x: string]: {
+        isConnected: boolean;
+        state: TerminalState;
+      };
+    }>
+  >;
+  terminal: {
+    [x: string]: Terminal;
+  };
+  addTerminal(terminal: Terminal, processId: number): void;
+  onConnected: (processId: number) => void;
+  activeTerminalIds: number[];
+  addConnection(config?: SSH_CONFIG): Promise<{
+    connected: boolean;
+    error: Error | null;
+    process: {
+      processId: number;
+    };
+  }>;
+  deleteTerminal(processId: number): Promise<{
+    success: boolean;
+    processId: number;
+  }>;
+  isSftpConnected: boolean;
+  setCurrentPath: React.Dispatch<React.SetStateAction<string>>;
+  currentPath: string;
+  openPath(path: string): Promise<void>;
+  setItems: React.Dispatch<React.SetStateAction<Record<string, FileItem>>>;
+  items: Record<string, FileItem>;
+  updateFile(path: string, silent?: boolean): Promise<FileContent | undefined>;
+  readFile(path: string): Promise<FileContent | undefined>;
+  getPathFiles(path: string): Promise<Record<string, FileItem> | undefined>;
+  config: SSH_CONFIG | null;
+  setConfig: React.Dispatch<React.SetStateAction<SSH_CONFIG | null>>;
+  connectServer: () => Promise<void>;
+  isLoading: boolean;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  localConfig: {
+    [x: string]: {
+      config: LOCAL_SSH_CONFIG;
+      paths: string[];
+    };
+  };
+  setLocalConfig: React.Dispatch<
+    React.SetStateAction<{
+      [x: string]: {
+        config: LOCAL_SSH_CONFIG;
+        paths: string[];
+      };
+    }>
+  >;
+  updateFolder(path: string): Promise<void>;
+  openedFiles: {
+    [name: string]: OpenedFile;
+  };
+  setOpenedFiles: React.Dispatch<
+    React.SetStateAction<{
+      [name: string]: OpenedFile;
+    }>
+  >;
+
+  lastFileVersion: {
+    [x: string]: FileContent;
+  };
+  setLastFileVersion: React.Dispatch<
+    React.SetStateAction<{
+      [x: string]: FileContent;
+    }>
+  >;
+  writeFile({
+    file,
+    newValue,
+  }: {
+    file: OpenedFile;
+    newValue: string | undefined;
+  }): Promise<
+    | {
+        success: boolean;
+        error: any;
+      }
+    | undefined
+  >;
+    setLastEditTime: React.Dispatch<React.SetStateAction<number>>
+  lastEditTime: number
+   setTimeWithoutTyping: React.Dispatch<React.SetStateAction<number>>
+   timeWithoutTyping: number
+}
+

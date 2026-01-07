@@ -1,5 +1,5 @@
 const { app, BrowserWindow } = require("electron");
-const serve = require("electron-serve");
+const serve = require("electron-serve").default;
 const path = require("path");
 const { ipcMain } = require("electron");
 const Client = require("ssh2-sftp-client");
@@ -87,6 +87,19 @@ ipcMain.handle("sftp:connect", async (_, config) => {
 ipcMain.handle("sftp:list", async (_, path) => {
   return await sftpManager.list(path);
 });
+ipcMain.handle("sftp:write", async (_, data) => {
+  try {
+    const result = await sftpManager.writeFile(data.path, data.content);
+    console.log(result);
+    return result;
+  } catch (error) {
+    console.log({ error });
+    return {
+      success: false,
+      error: error,
+    };
+  }
+});
 ipcMain.handle("sftp:dispose", async (_) => {
   return await sftpManager.disconnect();
 });
@@ -156,7 +169,13 @@ ipcMain.handle("storage:setKey", (event, key, value) => {
 
 ipcMain.handle("storage:getKey", (event, key, defaultValue) => {
   try {
+    console.log("Getting data")
+    const startTime = Date.now()
     const value = storageManager.getKey(key, defaultValue);
+    const endTime = Date.now()
+    const timeElapsed = endTime - startTime
+    console.log({seconds : timeElapsed / 1000, key})
+
     return { success: true, value };
   } catch (err) {
     return { success: false, error: err.message };
