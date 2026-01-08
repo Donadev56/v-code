@@ -4,15 +4,14 @@ import EventEmitter from "events";
 import os from "os";
 import fs from "fs/promises";
 import { v4 } from "uuid";
-import Store from "electron-store";
 
 class SFTPManager extends EventEmitter {
   constructor() {
     super();
     this.isConnected = false;
     this.sftp = null;
+    this.tempFilePath = path.join(os.homedir(), "unsaved_temp_files.json");
 
-    this.tempFilePath = "unsaved_temp_files.json";
   }
 
   async connect(config) {

@@ -14,6 +14,9 @@ const appServe = app.isPackaged
     })
   : null;
 
+ app.setName("Virtual Code");
+
+
 const createWindow = () => {
   const win = new BrowserWindow({
     frame: false,
@@ -23,6 +26,8 @@ const createWindow = () => {
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
+    icon: path.join(__dirname, "assets/icon.png")
+
   });
 
   ipcMain.on("minimize", () => win.minimize());
