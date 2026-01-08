@@ -45,6 +45,10 @@ contextBridge.exposeInMainWorld("windowAPI", {
   close: () => ipcRenderer.send("close"),
 });
 
+contextBridge.exposeInMainWorld("dialogApi", {
+  showAlert: (options) => ipcRenderer.invoke("dialog:showAlert", options),
+});
+
 contextBridge.exposeInMainWorld("electronStorage", {
   saveData: async (filename, data) => {
     const result = await ipcRenderer.invoke("storage:saveData", filename, data);

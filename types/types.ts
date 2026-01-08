@@ -1,3 +1,5 @@
+import ELectron from "electron";
+
 export type OpenedFile = {
   name: string;
   path: string;
@@ -88,7 +90,11 @@ export interface SftpApi {
     content: FileContent;
   }) => Promise<{ success: boolean; error: any }>;
 }
-
+export interface DialogApi {
+  showAlert: (
+    options: Electron.MessageBoxOptions,
+  ) => Promise<Electron.MessageBoxReturnValue>;
+}
 export interface TerminalConfig {
   promptType: PromptType;
   hostname: string;

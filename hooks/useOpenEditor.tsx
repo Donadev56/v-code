@@ -2,6 +2,7 @@
 
 import {
   buf,
+  DialogApi,
   ElectronStorage,
   FileContent,
   FileItem,
@@ -27,6 +28,14 @@ import {
 } from "@/lib/utils";
 import { toast } from "sonner";
 import { fromString } from "uint8arrays/from-string";
+import {
+  onError,
+  onReadFileError,
+  onReadFolderError,
+  onSftpConnectionError,
+  onSftpError,
+  onWriteFileError,
+} from "@/lib/error";
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
   undefined,
@@ -57,6 +66,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   const [timeWithoutTyping, setTimeWithoutTyping] = React.useState(0);
 
   const sftpRef = React.useRef<SftpApi | null>(null);
+  const dialogRef = React.useRef<DialogApi | null>(null);
+
   const [lastFileVersion, setLastFileVersion] = React.useState<{
     [x: string]: FileContent;
   }>({});
@@ -106,13 +117,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    saveFocusedFile();
+    //saveFocusedFile();
   }, [focusedFile]);
 
   React.useEffect(() => {
     //saveItems();
     updateFocusedFile();
-    saveOpenedFiles();
+    // saveOpenedFiles();
   }, [items, currentPath]);
 
   React.useEffect(() => {
@@ -128,7 +139,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       sftp.onEnd(onClose);
 
       sftp.onError((error) => {
-        toast.error(error);
+        onError(error);
       });
 
       sftp.onReady(onReady);
@@ -138,6 +149,12 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       sftp?.dispose();
     };
   }, [sftpRef.current]);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      dialogRef.current = window.dialogApi;
+    }
+  }, []);
 
   function onReady() {
     console.log("SFTP server ready");
@@ -153,18 +170,27 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
   function onClose() {
     () => {
-      toast.error("SFTP closed");
-
-      setTimeout(() => {
-        toast.promise(_attemptReconnect, {
-          loading: "Trying to reconnect",
-        });
-      }, 2500);
+      //toast.error("SFTP closed");
+      onSftpError({ message: "SFTP connection closed" }, _attemptReconnect);
+      //setTimeout(() => {
+      //  toast.promise(_attemptReconnect, {
+      //      loading: "Trying to reconnect",
+      //    });
+      //  }, 2500);
     };
   }
 
   async function _attemptReconnect() {
-    try {
+    toast.promise(
+      _reconnect,
+      {
+        loading : "Reconnecting..."
+      }
+    )
+  }
+
+ async function _reconnect() {
+  try {
       if (!config) {
         throw new Error("Config not found");
       }
@@ -175,7 +201,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         description: (error as any)?.message || String(error),
       });
     }
-  }
+ }
 
   function updateFocusedFile() {
     if (focusedFile) {
@@ -398,10 +424,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         afterConnection();
       }
     } catch (error: any) {
-      console.error({ error });
-      toast.error("Failed to connect", {
-        description: (error as any)?.message || String(error),
-      });
+      onSftpConnectionError(error, config, connectSftp);
+      // toast.error("Failed to connect", {
+      //  description: (error as any)?.message || String(error),
+      // });
     }
   };
 
@@ -502,7 +528,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       setOpenedFiles({});
       setFocusedFile(null);
 
-      loadSavedData(path);
+      // loadSavedData(path);
     } catch (error) {
       console.error({ error });
     } finally {
@@ -558,7 +584,9 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       const data = await readFile(path);
       if (data) {
         setItems((prev) => {
-        console.log({data : prev[path]})
+          if (!prev[path]) {
+            return prev;
+          }
           return {
             ...prev,
             [path]: {
@@ -571,7 +599,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         return data;
       }
     } catch (error) {
-      console.error({ error });
+      onReadFileError(error, path, silent, updateFile);
     } finally {
       setIsLoading(false);
     }
@@ -588,8 +616,17 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       if (result) {
         return result;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error({ error });
+      if (
+        error?.message ===
+        "Error invoking remote method 'sftp:read_file': Error: Not connected"
+      ) {
+        setIsSftpConnected(false);
+        setTimeout(() => {
+          _attemptReconnect();
+        }, 250);
+      }
     }
   }
 
@@ -633,18 +670,20 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       }
       return files;
     } catch (error: any) {
-      if (error?.message === "read ECONNRESET") {
+      if (error?.message === "Error invoking remote method 'sftp:list': Error: list: read ECONNRESET") {
         setIsSftpConnected(false);
-        if (config) connectSftp(config);
+        setTimeout(() => {
+          _attemptReconnect();
+        }, 250);
       }
       console.error(error?.message);
       toast.error((error as any)?.message ?? String(error));
     }
   }
 
-  async function updateFolder(path: string) {
+  async function updateFolder(path: string, silent = false) {
     const file = Object.values(items).find((e) => e.data.path === path);
-    if (!file?.children || file?.children?.length === 0) {
+    if (!file?.children || file?.children?.length === 0 || !silent) {
       setIsLoading(true);
     }
 
@@ -673,7 +712,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error({ error });
-      toast.error((error as any)?.message ?? String(error));
+      onReadFolderError(error, path, silent, updateFolder);
+      // toast.error((error as any)?.message ?? String(error));
     } finally {
       setIsLoading(false);
     }
@@ -730,9 +770,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       return save;
     } catch (error) {
       console.error(error);
-      toast.error("Error while saving file", {
-        description: (error as any)?.message ?? String(error),
-      });
+      onWriteFileError(error, { file, newValue }, writeFile);
+      // toast.error("Error while saving file", {
+      // description: (error as any)?.message ?? String(error),
+      // });
     }
   }
 
@@ -749,50 +790,37 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  async function loadFileWithPath(path: string, mainPath = currentPath) {
+  async function loadFileWithPath(
+    targetPath: string,
+    basePath: string = currentPath,
+  ) {
     try {
-      const actualPath = mainPath.split("");
-      if (actualPath.length === 0) {
-        return;
-      }
-      const targetPath = path.split("");
-      let changeBasePath: string = "";
-      for (let i = 0; i < targetPath.length; i++) {
-        if (
-          !actualPath[i] ||
-          actualPath[i].toLowerCase() !== targetPath[i].toLowerCase()
-        ) {
-          changeBasePath = targetPath.slice(i, targetPath.length).join("");
-          break;
-        }
+      if (!basePath) return;
+
+      const baseSegments = basePath.split("/").filter(Boolean);
+      const targetSegments = targetPath.split("/").filter(Boolean);
+
+      let commonLength = 0;
+      while (
+        commonLength < baseSegments.length &&
+        commonLength < targetSegments.length &&
+        baseSegments[commonLength].toLowerCase() ===
+          targetSegments[commonLength].toLowerCase()
+      ) {
+        commonLength++;
       }
 
-      const targets = changeBasePath.split("/");
-      console.log({ changeBasePath });
-      console.log({ targets });
-      let lastTargetPath = mainPath;
-      const targetPathList: string[] = [];
-      for (let i = 0; i < targets.length; i++) {
-        if (targets[i].length === 0) {
-          lastTargetPath = lastTargetPath + "/";
-          continue;
-        }
-        const fullTargetPath = lastTargetPath.endsWith("/")
-          ? lastTargetPath + targets[i]
-          : lastTargetPath + "/" + targets[i];
-        console.log(fullTargetPath);
-        lastTargetPath = fullTargetPath;
-        targetPathList.push(fullTargetPath);
-      }
+      let current = "/" + baseSegments.slice(0, commonLength).join("/");
 
-      for (let i = 0; i < targetPathList.length; i++) {
-        const filePath = targetPathList[i];
-        if (i == targetPathList.length - 1) {
-          console.log("updating file", filePath);
-          await updateFile(filePath);
+      for (let i = commonLength; i < targetSegments.length; i++) {
+        current += "/" + targetSegments[i];
+
+        const isLast = i === targetSegments.length - 1;
+
+        if (isLast) {
+          await updateFile(current, true);
         } else {
-          console.log("Updating folder...", filePath);
-          await updateFolder(filePath);
+          await updateFolder(current, true);
         }
       }
     } catch (error) {

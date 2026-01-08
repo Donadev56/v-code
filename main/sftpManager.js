@@ -33,26 +33,23 @@ class SFTPManager extends EventEmitter {
       });
       await this.sftp.connect(config);
       this.emit("ready");
+
       this.isConnected = true;
       return { connected: true, error: null };
     } catch (error) {
       return { error, connected: false };
     }
   }
-
   async writeFile(remotePath, content) {
     try {
       if (!this.isConnected) throw new Error("Not connected");
 
-      const tmpLocal = path.join(os.tmpdir(), path.basename(remotePath));
+        const tmpLocal = path.join(os.tmpdir(), path.basename(remotePath));
 
-      await fs.writeFile(tmpLocal, content);
+        await fs.writeFile(tmpLocal, content);
 
-      const remoteTmp = `${remotePath}.tmp`;
+      await this.sftp.fastPut(tmpLocal,remotePath)
 
-      await this.sftp.put(tmpLocal, remoteTmp);
-      await this.sftp.delete(remotePath);
-      await this.sftp.rename(remoteTmp, remotePath);
       return { success: true, error: null };
     } catch (error) {
       return { success: false, error };

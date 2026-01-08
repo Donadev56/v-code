@@ -4,6 +4,7 @@ import React from "react";
 import { Uint8ArrayToString } from "@/lib/utils";
 import { GetMonacoLanguage } from "@/lib/files";
 import { buf, FileRendererType } from "@/types/types";
+import { useDebouncedCallback } from "use-debounce";
 
 export const CodeEditor = ({ ...props }: EditorProps) => {
   const monaco = useMonaco();
@@ -28,6 +29,7 @@ export const CodeEditorRenderer = ({
   updateFileContent,
 }: FileRendererType) => {
   console.log({ file });
+
   return (
     <CodeEditor
       value={

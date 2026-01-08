@@ -6,6 +6,8 @@ const Client = require("ssh2-sftp-client");
 const { sshManager } = require("./sshManager");
 const { sftpManager } = require("./sftpManager");
 const { storageManager } = require("./localStorage");
+const { dialog } = require("electron");
+
 const appServe = app.isPackaged
   ? serve({
       directory: path.join(__dirname, "../out"),
@@ -199,6 +201,10 @@ ipcMain.handle("storage:clearStore", () => {
     return { success: false, error: err.message };
   }
 });
+
+// DIALOG
+
+ipcMain.handle("dialog:showAlert", (_, data) => dialog.showMessageBox(data));
 
 app.on("ready", () => {
   createWindow();

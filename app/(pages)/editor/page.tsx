@@ -38,6 +38,7 @@ import { BiError } from "react-icons/bi";
 import { ImageViewer } from "@/components/editor-main/image_viewer";
 import { EditorSpaceRenderer } from "@/components/editor-main/space_renderer";
 import { fromString } from "uint8arrays/from-string";
+import { useDebouncedCallback } from "use-debounce";
 
 export default function EditorPage() {
   const {
@@ -68,6 +69,13 @@ export default function EditorPage() {
   const [currentTerminalId, setCurrentTerminalId] = React.useState(0);
   const [isVisible, setVisible] = React.useState(false);
   const dialog = useEditorDialog();
+
+  const updateFileContent = useDebouncedCallback(
+    (data: { file: OpenedFile; newValue: string | undefined }) => {
+      _updateFileContent(data);
+    },
+    2000,
+  );
 
   React.useEffect(() => {
     if (!isSftpConnected) {
@@ -112,7 +120,7 @@ export default function EditorPage() {
     });
   }
 
-  async function updateFileContent(data: {
+  async function _updateFileContent(data: {
     file: OpenedFile;
     newValue: string | undefined;
   }) {
