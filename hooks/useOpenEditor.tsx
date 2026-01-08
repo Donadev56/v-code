@@ -36,6 +36,7 @@ import {
   onSftpError,
   onWriteFileError,
 } from "@/lib/error";
+import { useDebouncedCallback } from "use-debounce";
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
   undefined,
@@ -87,6 +88,14 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   const [activeTerminalIds, setActiveTerminalIds] = React.useState<number[]>(
     [],
   );
+  const saveAfterItemsChange = useDebouncedCallback(
+    () => _saveAfterItemsChange(),
+    2000,
+  );
+  const saveAfterFocusFileChange = useDebouncedCallback(
+    () => _saveAfterFocusFileChange(),
+    2000,
+  );
 
   const openedFileKeyBase = "local:opened:v0.06:file:for:";
   const focusFileKeyBase = "local:focus:file:v0.06:file:for:";
@@ -117,14 +126,24 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    //saveFocusedFile();
+    //  Comment
+    saveAfterFocusFileChange();
   }, [focusedFile]);
 
   React.useEffect(() => {
-    //saveItems();
-    updateFocusedFile();
-    // saveOpenedFiles();
+    saveAfterItemsChange();
+    //  Comment
   }, [items, currentPath]);
+
+  function _saveAfterItemsChange() {
+    updateFocusedFile();
+    saveOpenedFiles();
+    //saveItems();
+  }
+
+  function _saveAfterFocusFileChange() {
+    saveFocusedFile();
+  }
 
   React.useEffect(() => {
     if (listenerRegistered.current) {
@@ -181,16 +200,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   }
 
   async function _attemptReconnect() {
-    toast.promise(
-      _reconnect,
-      {
-        loading : "Reconnecting..."
-      }
-    )
+    toast.promise(_reconnect, {
+      loading: "Reconnecting...",
+    });
   }
 
- async function _reconnect() {
-  try {
+  async function _reconnect() {
+    try {
       if (!config) {
         throw new Error("Config not found");
       }
@@ -201,7 +217,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         description: (error as any)?.message || String(error),
       });
     }
- }
+  }
 
   function updateFocusedFile() {
     if (focusedFile) {
@@ -245,11 +261,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       }
       console.log("Saving files....");
       const key = `${focusFileKeyBase}:${currentPath}`;
-      if (!focusedFile.content || focusedFile.content === buf) {
+      if (!focusedFile.content || focusedFile.content === buf || focusedFile.content.length === 0) {
         console.error("Content not found");
         return;
       }
-
       await saveData(StringifyFile(focusedFile), key);
     } catch (error: any) {
       console.error(error?.message);
@@ -528,7 +543,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       setOpenedFiles({});
       setFocusedFile(null);
 
-      // loadSavedData(path);
+      loadSavedData(path);
+      // comment
     } catch (error) {
       console.error({ error });
     } finally {
@@ -670,7 +686,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       }
       return files;
     } catch (error: any) {
-      if (error?.message === "Error invoking remote method 'sftp:list': Error: list: read ECONNRESET") {
+      if (
+        error?.message ===
+        "Error invoking remote method 'sftp:list': Error: list: read ECONNRESET"
+      ) {
         setIsSftpConnected(false);
         setTimeout(() => {
           _attemptReconnect();
@@ -729,7 +748,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     };
     newValue: string | undefined;
   }) {
-    if (!newValue) {
+    if (newValue === undefined) {
       return;
     }
 

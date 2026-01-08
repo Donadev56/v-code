@@ -5,7 +5,7 @@ const { ipcMain } = require("electron");
 const Client = require("ssh2-sftp-client");
 const { sshManager } = require("./sshManager");
 const { sftpManager } = require("./sftpManager");
-const { storageManager } = require("./localStorage");
+const { keyValueStorage } = require("./keyValueStorage");
 const { dialog } = require("electron");
 
 const appServe = app.isPackaged
@@ -117,7 +117,7 @@ ipcMain.handle("sftp:isConnected", async () => {
 
 ipcMain.handle("storage:saveData", (event, filename, data) => {
   try {
-    storageManager.saveData(filename, data);
+    keyValueStorage.saveData(filename, data);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -126,7 +126,7 @@ ipcMain.handle("storage:saveData", (event, filename, data) => {
 
 ipcMain.handle("storage:readData", (event, filename) => {
   try {
-    const data = storageManager.readData(filename);
+    const data = keyValueStorage.readData(filename);
     return { success: true, data };
   } catch (err) {
     return { success: false, error: err.message };
@@ -135,7 +135,7 @@ ipcMain.handle("storage:readData", (event, filename) => {
 
 ipcMain.handle("storage:deleteData", (event, filename) => {
   try {
-    storageManager.deleteData(filename);
+    keyValueStorage.deleteData(filename);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -144,7 +144,7 @@ ipcMain.handle("storage:deleteData", (event, filename) => {
 
 ipcMain.handle("storage:exists", (event, filename) => {
   try {
-    const exists = storageManager.exists(filename);
+    const exists = keyValueStorage.exists(filename);
     return { success: true, exists };
   } catch (err) {
     return { success: false, error: err.message };
@@ -153,7 +153,7 @@ ipcMain.handle("storage:exists", (event, filename) => {
 
 ipcMain.handle("storage:listFiles", () => {
   try {
-    const files = storageManager.listFiles();
+    const files = keyValueStorage.listFiles();
     return { success: true, files };
   } catch (err) {
     return { success: false, error: err.message };
@@ -162,7 +162,7 @@ ipcMain.handle("storage:listFiles", () => {
 
 ipcMain.handle("storage:setKey", (event, key, value) => {
   try {
-    storageManager.setKey(key, value);
+    keyValueStorage.setKey(key, value);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -173,7 +173,7 @@ ipcMain.handle("storage:getKey", (event, key, defaultValue) => {
   try {
     console.log("Getting data");
     const startTime = Date.now();
-    const value = storageManager.getKey(key, defaultValue);
+    const value = keyValueStorage.getKey(key, defaultValue);
     const endTime = Date.now();
     const timeElapsed = endTime - startTime;
     console.log({ seconds: timeElapsed / 1000, key });
@@ -186,7 +186,7 @@ ipcMain.handle("storage:getKey", (event, key, defaultValue) => {
 
 ipcMain.handle("storage:deleteKey", (event, key) => {
   try {
-    storageManager.deleteKey(key);
+    keyValueStorage.deleteKey(key);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -195,7 +195,7 @@ ipcMain.handle("storage:deleteKey", (event, key) => {
 
 ipcMain.handle("storage:clearStore", () => {
   try {
-    storageManager.clearStore();
+    keyValueStorage.clearStore();
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };

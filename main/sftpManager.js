@@ -3,12 +3,16 @@ import path from "path";
 import EventEmitter from "events";
 import os from "os";
 import fs from "fs/promises";
+import { v4 } from "uuid";
+import Store from "electron-store";
 
 class SFTPManager extends EventEmitter {
   constructor() {
     super();
     this.isConnected = false;
     this.sftp = null;
+
+    this.tempFilePath = "unsaved_temp_files.json";
   }
 
   async connect(config) {
@@ -44,15 +48,29 @@ class SFTPManager extends EventEmitter {
     try {
       if (!this.isConnected) throw new Error("Not connected");
 
-        const tmpLocal = path.join(os.tmpdir(), path.basename(remotePath));
+      const tmpLocal = path.join(os.tmpdir(), path.basename(remotePath));
+      const id = v4();
+      const time = Date.now();
 
-        await fs.writeFile(tmpLocal, content);
+      await fs.writeFile(tmpLocal, content);
 
-      await this.sftp.fastPut(tmpLocal,remotePath)
+      let savedData = (await this._readStore(this.tempFilePath)) ?? [];
+      savedData = [...savedData, { remotePath, tmpLocal, time, id }];
+      this._writeStore(this.tempFilePath, savedData);
 
-      return { success: true, error: null };
+      const message = await this.sftp.fastPut(tmpLocal, remotePath);
+
+      savedData = (await this._readStore(this.tempFilePath)) ?? [];
+      await this._writeStore(
+        this.tempFilePath,
+        savedData.filter((e) => e.id !== id),
+      );
+
+      await fs.unlink(tmpLocal);
+
+      return { success: true, error: null, message };
     } catch (error) {
-      return { success: false, error };
+      return { success: false, error, message: null };
     }
   }
 
@@ -77,6 +95,17 @@ class SFTPManager extends EventEmitter {
     const buffer = await this.sftp.get(remotePath);
 
     return buffer;
+  }
+
+  async _readStore(path) {
+    try {
+      const data = await fs.readFile(path, "utf8");
+      return JSON.parse(data);
+    } catch (err) {}
+  }
+
+  async _writeStore(path, data) {
+    return await fs.writeFile(path, JSON.stringify(data, null, 2), "utf8");
   }
 }
 
