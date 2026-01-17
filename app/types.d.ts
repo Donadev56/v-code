@@ -3,7 +3,7 @@ import { SftpApi, ElectronStorage } from "./types/sftp";
 
 declare global {
   interface Window {
-    sftpApi?: SftpApi;
+    sftpApi: SftpApi;
     electronStorage: ElectronStorage;
     dialogApi: DialogApi;
   }

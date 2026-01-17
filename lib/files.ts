@@ -413,9 +413,11 @@ export const GetMonacoLanguage = (fileName: string) => {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
   switch (ext) {
     case "ts":
+      return "typescript";
     case "tsx":
       return "typescript";
     case "js":
+      return "javascript";
     case "jsx":
       return "javascript";
     case "json":

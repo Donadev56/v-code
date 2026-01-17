@@ -29,6 +29,8 @@ contextBridge.exposeInMainWorld("sftpApi", {
   connect: (config) => ipcRenderer.invoke("sftp:connect", config),
   dispose: () => ipcRenderer.invoke("sftp:dispose"),
   list: (path) => ipcRenderer.invoke("sftp:list", path),
+  cwd: () => ipcRenderer.invoke("sftp:cwd"),
+
   isConnected: () => ipcRenderer.invoke("sftp:isConnected"),
   readFile: (path) => ipcRenderer.invoke("sftp:read_file", path),
   writeFile: (data) => ipcRenderer.invoke("sftp:write", data),

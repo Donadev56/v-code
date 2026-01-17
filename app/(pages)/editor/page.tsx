@@ -11,7 +11,13 @@ import {
   GetMonacoLanguage,
 } from "@/lib/files";
 import { cn, getKeyFromConfig, isImage } from "@/lib/utils";
-import { buf, FileContent, FileItem, OpenedFile } from "@/types/types";
+import {
+  buf,
+  FileContent,
+  FileItem,
+  FileSavedState,
+  OpenedFile,
+} from "@/types/types";
 import { PlusIcon, SearchIcon, Trash2, X } from "lucide-react";
 import React from "react";
 import { Panel, Separator } from "react-resizable-panels";
@@ -40,6 +46,8 @@ import { EditorSpaceRenderer } from "@/components/editor-main/space_renderer";
 import { fromString } from "uint8arrays/from-string";
 import { useDebouncedCallback } from "use-debounce";
 
+import OpenedFilesView from "@/components/opened_file";
+
 export default function EditorPage() {
   const {
     focusedFile,
@@ -66,8 +74,9 @@ export default function EditorPage() {
     lastEditTime,
     setLastEditTime,
   } = useOpenEditor();
+
+
   const [currentTerminalId, setCurrentTerminalId] = React.useState(0);
-  const [isVisible, setVisible] = React.useState(false);
   const dialog = useEditorDialog();
 
   const updateFileContent = useDebouncedCallback(
@@ -95,30 +104,6 @@ export default function EditorPage() {
       }
     }
   }, [isSftpConnected]);
-
-  function removeFileFromBar(file: OpenedFile) {
-    let rest: { [name: string]: OpenedFile } = {};
-    let lastElementIndex = 0;
-    setOpenedFiles((prev) => {
-      lastElementIndex =
-        Object.values(prev).findIndex((e) => e.path === file.path) - 1;
-      const { [`${file.path}`]: _, ...r } = prev;
-      rest = r;
-      return rest;
-    });
-
-    setFocusedFile({ name: "", content: buf, path: "/" });
-    if (Object.values(rest).length === 0) {
-      return;
-    }
-
-    setFocusedFile({
-      ...Object.values(rest).toReversed()[
-        lastElementIndex < 0 ? 0 : lastElementIndex
-      ],
-      content: items[file.path]?.data?.content || buf,
-    });
-  }
 
   async function _updateFileContent(data: {
     file: OpenedFile;
@@ -178,24 +163,24 @@ export default function EditorPage() {
   const openFile = async (node: NodeApi<FileItem>) => {
     try {
       const item = node.data;
+      const path = item.data.path;
 
       if (!item.data.path) {
         throw new Error("Path not defined");
       }
       let content: FileContent = buf;
-      if (!node.data.data.content) {
-        const result = await updateFile(item.data.path);
-        if (result) {
-          content = result;
-        }
+      let state: FileSavedState = "SAVED";
+      if (openedFiles[path]) {
+        content = openedFiles[path].content;
+        state = openedFiles[path].state;
       } else {
-        content = node.data.data.content;
-        updateFile(item.data.path, true);
+        content = (await updateFile(item.data.path)) || buf;
       }
-      const file = {
+      const file: OpenedFile = {
         name: item.data?.name || item.name,
-        content: content,
+        content,
         path: item.data.path,
+        state: state,
       };
       setOpenedFiles((prev) => ({
         ...prev,
@@ -209,11 +194,9 @@ export default function EditorPage() {
   const onOpenDir = async (node: NodeApi<FileItem>) => {
     try {
       const item = node.data;
-
       if (!item.data.path) {
         throw new Error("Path not defined");
       }
-
       await updateFolder(item.data.path);
     } catch (error) {
       console.error(error);
@@ -258,39 +241,14 @@ export default function EditorPage() {
           {Object.values(items).length > 0 && (
             <Separator className="h-full w-0.5 bg-border" />
           )}
-          <Panel minSize={"30%"}>
-            <div className="w-full relative h-full">
-              {Object.values(openedFiles).length > 0 && (
-                <div className="flex border-b z-1 relative bg-background/20 backdrop-blur-2xl scrollbar-hide items-center overflow-x-scroll">
-                  {Object.values(openedFiles).map((e) => {
-                    const isCurrent = focusedFile?.path === e.path;
-                    const content = items[e.path]?.data?.content;
+          <Panel className="w-full h-full">
+            <Group
+              orientation="vertical"
+              className="w-full flex flex-col  relative h-full"
+            >
+              <Panel className="w-full h-full" minSize={"20%"}>
+                <OpenedFilesView />
 
-                    return (
-                      <div className="relative group ">
-                        <div
-                          onClick={() =>
-                            setFocusedFile({ ...e, content: content || buf })
-                          }
-                          className={cn(
-                            "px-4 py-1.5 w-full  text-nowrap pr-8 max-h-8.75 cursor-pointer hover:bg-muted/20 transition-all flex items-center gap-2  border",
-                            isCurrent && "border-t-primary",
-                          )}
-                        >
-                          <FileIcon size={16} filePath={e.path} />
-                          <div className="text-sm">{e.name} </div>
-                        </div>
-                        <X
-                          onClick={() => removeFileFromBar(e)}
-                          size={20}
-                          className=" text-transparent! group-hover:text-gray-400/70! hover:text-foreground absolute top-1/5 right-1.5 cursor-pointer"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <div className="w-full relative h-full">
                 {focusedFile ? (
                   <EditorSpaceRenderer
                     updateFileContent={updateFileContent}
@@ -304,68 +262,70 @@ export default function EditorPage() {
                     />
                   </div>
                 )}
-                <TranslateY condition={isTerminalVisible}>
-                  <div className="absolute bottom-5 z-10 flex max-h-[45svh]    w-full flex-col gap-2 border-t bg-card/95 backdrop-blur-sm  p-4 font-mono">
-                    <div className="w-full relative h-full justify-between flex gap-2 ">
-                      <TerminalsView
-                        setCurrentTerminalId={setCurrentTerminalId}
-                        currentTerminalId={currentTerminalId}
-                      />
+              </Panel>
 
-                      <div className=" min-w-14 w-14 overflow-scroll pb-40 relative gap-3 my-4 p-4 flex max-h-[33svh]  min-h-[33svh]  justify-end bottom-5  z-10 ">
-                        <div className="flex gap-1 flex-col">
-                          {[...activeTerminalIds, -1, -2].map((id) => {
-                            const isCurrent = id === currentTerminalId;
+         {  isTerminalVisible &&  
+          <Panel className="w-full h-full" minSize={"10%"}>
+                <div className="relative z-10 flex h-full   w-full flex-col gap-2 border-t bg-card/95 backdrop-blur-sm  p-4 font-mono">
+                  <div className="w-full relative h-full justify-between flex gap-2 ">
+                    <TerminalsView
+                      setCurrentTerminalId={setCurrentTerminalId}
+                      currentTerminalId={currentTerminalId}
+                    />
 
-                            if (id === -1) {
-                              return (
-                                <div
-                                  key={id}
-                                  onClick={addTerm}
-                                  className={cn(
-                                    "p-2 items-center fixed bg-muted bottom-15 rounded  mt-3 max-w-[40px] max-h-[40px] flex justify-center",
-                                  )}
-                                >
-                                  <PlusIcon size={20} />
-                                </div>
-                              );
-                            }
-                            if (id === -2) {
-                              return (
-                                <div
-                                  key={id}
-                                  onClick={() => deleteTerm(currentTerminalId)}
-                                  className={cn(
-                                    "p-2 items-center fixed bg-destructive/20 text-destructive bottom-5 rounded  mt-3 max-w-[40px] max-h-[40px] flex justify-center",
-                                  )}
-                                >
-                                  <Trash2 size={20} />
-                                </div>
-                              );
-                            }
+                    <div className=" min-w-14 w-14 overflow-scroll pb-40 relative gap-3 my-4 p-4 flex max-h-[33svh]  min-h-[33svh]  justify-end bottom-5  z-10 ">
+                      <div className="flex gap-1 flex-col">
+                        {[...activeTerminalIds, -1, -2].map((id) => {
+                          const isCurrent = id === currentTerminalId;
 
+                          if (id === -1) {
                             return (
                               <div
                                 key={id}
-                                onClick={() => setCurrentTerminalId(id)}
+                                onClick={addTerm}
                                 className={cn(
-                                  "p-2 items-center  max-w-[40px] max-h-[40px] flex justify-center",
-                                  isCurrent && "border-primary border",
+                                  "p-2 items-center fixed bg-muted bottom-15 rounded  mt-3 max-w-[40px] max-h-[40px] flex justify-center",
                                 )}
                               >
-                                <IoTerminalOutline />
+                                <PlusIcon size={20} />
                               </div>
                             );
-                          })}
+                          }
+                          if (id === -2) {
+                            return (
+                              <div
+                                key={id}
+                                onClick={() => deleteTerm(currentTerminalId)}
+                                className={cn(
+                                  "p-2 items-center fixed bg-destructive/20 text-destructive bottom-5 rounded  mt-3 max-w-[40px] max-h-[40px] flex justify-center",
+                                )}
+                              >
+                                <Trash2 size={20} />
+                              </div>
+                            );
+                          }
 
-                          <div className="h-20 min-h-20  w-full "></div>
-                        </div>
+                          return (
+                            <div
+                              key={id}
+                              onClick={() => setCurrentTerminalId(id)}
+                              className={cn(
+                                "p-2 items-center  max-w-[40px] max-h-[40px] flex justify-center",
+                                isCurrent && "border-primary border",
+                              )}
+                            >
+                              <IoTerminalOutline />
+                            </div>
+                          );
+                        })}
+
+                        <div className="h-20 min-h-20  w-full "></div>
                       </div>
                     </div>
                   </div>
-                </TranslateY>
-              </div>
-            </div>
+                </div>
+              </Panel>}
+            </Group>
           </Panel>
         </Group>
       </div>

@@ -11,7 +11,6 @@ class SFTPManager extends EventEmitter {
     this.isConnected = false;
     this.sftp = null;
     this.tempFilePath = path.join(os.homedir(), "unsaved_temp_files.json");
-
   }
 
   async connect(config) {
@@ -34,7 +33,7 @@ class SFTPManager extends EventEmitter {
         this.emit("error", err);
         this.isConnected = false;
       });
-      await this.sftp.connect(config);
+      await this.sftp.connect({ ...config, timeout: 30_000 });
       this.emit("ready");
 
       this.isConnected = true;
@@ -54,6 +53,7 @@ class SFTPManager extends EventEmitter {
       await fs.writeFile(tmpLocal, content);
 
       let savedData = (await this._readStore(this.tempFilePath)) ?? [];
+
       savedData = [...savedData, { remotePath, tmpLocal, time, id }];
       this._writeStore(this.tempFilePath, savedData);
 
@@ -76,6 +76,10 @@ class SFTPManager extends EventEmitter {
   async list(path = "/") {
     if (!this.isConnected) throw new Error("Not connected");
     return await this.sftp.list(path);
+  }
+  async cwd() {
+    if (!this.isConnected) throw new Error("Not connected");
+    return await this.sftp.cwd();
   }
 
   async disconnect() {

@@ -5,7 +5,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 
-import { SSHApi, SshData, TerminalState } from "@/types/types";
+import { SftpApi, SSHApi, SshData, TerminalState } from "@/types/types";
 import { isPaste, KeyCodes, TerminalOptions } from "@/lib/utils";
 import { useOpenEditor } from "@/hooks/useOpenEditor";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ export const TerminalComponent = ({ processId }: { processId: number }) => {
     onConnected,
     deleteTerminal,
     currentPath,
+    attemptReconnect,
   } = useOpenEditor();
   const listenersAttachedRef = useRef(false);
 
@@ -278,9 +279,7 @@ export const TerminalComponent = ({ processId }: { processId: number }) => {
       }
 
       case KeyCodes.TAB: {
-        terminal.write("  ");
-        inputBufferRef.current += "  ";
-        return;
+        // handleTabClick();
       }
 
       case KeyCodes.ARROW_LEFT: {
@@ -301,6 +300,65 @@ export const TerminalComponent = ({ processId }: { processId: number }) => {
       }
     }
   };
+
+  async function handleTabClick() {
+    try {
+      const terminal = termRef.current;
+      if (!terminal) {
+        throw new Error("Terminal not found");
+      }
+      const command = inputBufferRef.current;
+      const lastCommand = command.split(" ").pop();
+      if (!lastCommand) {
+        makeSpace();
+        return;
+      }
+
+      if (command.length > 0) {
+        const sftp: SftpApi = window.sftpApi;
+        if (sftp) {
+          const isConnected = await sftp.isConnected();
+          if (!isConnected) {
+            await attemptReconnect();
+            return;
+          }
+          const files = await sftp.list();
+          const compatibleFiles = files.filter((file) =>
+            file.name.startsWith(lastCommand),
+          );
+          if (compatibleFiles.length === 0) {
+            makeSpace();
+            return;
+          }
+          if (compatibleFiles.length === 1) {
+            command.split(" ").pop();
+            command.split(" ").push(compatibleFiles[0].name);
+            return;
+          }
+
+          if (compatibleFiles.length > 1) {
+            terminal.writeln(
+              compatibleFiles
+                .map((file) =>
+                  file.type === "d" ? file.name + "/" : file.name,
+                )
+                .join(" "),
+            );
+            return;
+          }
+        }
+        makeSpace();
+      }
+    } catch (error) {
+      console.error(error);
+      makeSpace();
+    }
+  }
+
+  function makeSpace() {
+    termRef?.current?.write("  ");
+    inputBufferRef.current += "  ";
+  }
 
   const handleResize = useCallback(() => {
     const fitAddon = fitAddonRef.current;
@@ -372,7 +430,7 @@ export const TerminalComponent = ({ processId }: { processId: number }) => {
   }, [terminalState]);
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full ">
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-3">
           <span className="font-semibold">Terminal</span>
@@ -412,24 +470,19 @@ export const TerminalComponent = ({ processId }: { processId: number }) => {
           </span>
         </div>
       </div>
-      <div className="h-full min-h-[33svh] ">
+      <div className="h-full  ">
         <div
           ref={containerRef}
           style={{
             backgroundColor: "transparent",
             height: "100%",
           }}
-          className="h-full min-h-[33svh] max-h-[33svh] w-full bg-transparent!  "
+          className="h-full  max-h-full w-full bg-transparent!  "
           onClick={() => termRef.current?.focus()}
         />
       </div>
 
-      <div className="text-xs text-muted-foreground flex justify-between">
-        <span>
-          ↑/↓: History • Ctrl+C: Cancel • Tab: Complete • Enter: Execute
-        </span>
-        <span>{inputBufferRef.current.length} chars</span>
-      </div>
+   
     </div>
   );
 };

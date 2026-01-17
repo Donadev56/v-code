@@ -14,8 +14,7 @@ const appServe = app.isPackaged
     })
   : null;
 
- app.setName("Virtual Code");
-
+app.setName("Virtual Code");
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -26,8 +25,7 @@ const createWindow = () => {
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
-    icon: path.join(__dirname, "assets/icon.png")
-
+    icon: path.join(__dirname, "assets/icon.png"),
   });
 
   ipcMain.on("minimize", () => win.minimize());
@@ -94,6 +92,11 @@ ipcMain.handle("sftp:connect", async (_, config) => {
 ipcMain.handle("sftp:list", async (_, path) => {
   return await sftpManager.list(path);
 });
+
+ipcMain.handle("sftp:cwd", async () => {
+  return await sftpManager.cwd();
+});
+
 ipcMain.handle("sftp:write", async (_, data) => {
   try {
     const result = await sftpManager.writeFile(data.path, data.content);

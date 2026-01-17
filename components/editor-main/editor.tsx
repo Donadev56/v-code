@@ -4,7 +4,7 @@ import React from "react";
 import { Uint8ArrayToString } from "@/lib/utils";
 import { GetMonacoLanguage } from "@/lib/files";
 import { buf, FileRendererType } from "@/types/types";
-import { useDebouncedCallback } from "use-debounce";
+import { useOpenEditor } from "@/hooks/useOpenEditor";
 
 export const CodeEditor = ({ ...props }: EditorProps) => {
   const monaco = useMonaco();
@@ -15,6 +15,10 @@ export const CodeEditor = ({ ...props }: EditorProps) => {
     }
     monaco.editor.defineTheme("OpenCode", OPENCODE_THEME as any);
     monaco.editor.setTheme("OpenCode");
+    monaco.typescript.typescriptDefaults.setCompilerOptions({
+      jsx: monaco.typescript.JsxEmit.React,
+      allowNonTsExtensions: true,
+    });
   }, [monaco]);
 
   return (
@@ -29,6 +33,10 @@ export const CodeEditorRenderer = ({
   updateFileContent,
 }: FileRendererType) => {
   console.log({ file });
+  const editor = useOpenEditor();
+  console.log("SSH SERVER PATH", file.path);
+  const path = `ssh://${editor.config?.user}@${editor.config?.host}${file.path}`;
+  console.log({ remote: path });
 
   return (
     <CodeEditor
@@ -37,6 +45,7 @@ export const CodeEditorRenderer = ({
           ? ""
           : Uint8ArrayToString(file.content)
       }
+      path={path} // 🔥 THIS IS ESSENTIAL
       language={GetMonacoLanguage(file.name)}
       onChange={(newValue) => updateFileContent({ file, newValue })}
     />

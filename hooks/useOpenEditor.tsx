@@ -37,6 +37,10 @@ import {
   onWriteFileError,
 } from "@/lib/error";
 import { useDebouncedCallback } from "use-debounce";
+import { startVscodeApi } from "@/lib/vscodeApi";
+import { registerSshFsProvider } from "@/lib/sshFsProvider";
+import { startTsLanguageClient } from "@/lib/language";
+
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
   undefined,
@@ -65,6 +69,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [lastEditTime, setLastEditTime] = React.useState(0);
   const [timeWithoutTyping, setTimeWithoutTyping] = React.useState(0);
+
+  const updateFileItemAfterWrite = useDebouncedCallback(
+    (data: { path: string; newContent: FileContent }) => {
+      updateItemFileContent(data.path, data.newContent);
+    },
+    20_000,
+  );
 
   const sftpRef = React.useRef<SftpApi | null>(null);
   const dialogRef = React.useRef<DialogApi | null>(null);
@@ -105,6 +116,20 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   }, [currentPath]);
 
   const listenerRegistered = React.useRef(false);
+  React.useEffect(() => {
+    startVscodeApi();
+  }, []);
+
+  React.useEffect(() => {
+    if (isSftpConnected && currentPath && config) {
+      registerSshFsProvider({
+        readFile,
+        writeFile,
+        getPathFiles
+      });
+      startTsLanguageClient(currentPath, config);
+    }
+  }, [isSftpConnected, currentPath]);
 
   React.useEffect(() => {
     getSavedConfigData().then((result) => {
@@ -190,16 +215,16 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   function onClose() {
     () => {
       //toast.error("SFTP closed");
-      onSftpError({ message: "SFTP connection closed" }, _attemptReconnect);
+      onSftpError({ message: "SFTP connection closed" }, attemptReconnect);
       //setTimeout(() => {
-      //  toast.promise(_attemptReconnect, {
+      //  toast.promise(attemptReconnect, {
       //      loading: "Trying to reconnect",
       //    });
       //  }, 2500);
     };
   }
 
-  async function _attemptReconnect() {
+  async function attemptReconnect() {
     toast.promise(_reconnect, {
       loading: "Reconnecting...",
     });
@@ -261,7 +286,11 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       }
       console.log("Saving files....");
       const key = `${focusFileKeyBase}:${currentPath}`;
-      if (!focusedFile.content || focusedFile.content === buf || focusedFile.content.length === 0) {
+      if (
+        !focusedFile.content ||
+        focusedFile.content === buf ||
+        focusedFile.content.length === 0
+      ) {
         console.error("Content not found");
         return;
       }
@@ -573,9 +602,9 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
           return parsed;
         });
 
-        Object.values(parsed).forEach((file) => {
-          loadFileWithPath(file.path, path);
-        });
+        // Object.values(parsed).forEach((file) => {
+        //  loadFileWithPath(file.path, path);
+        //   });
       }
 
       if (focusFileString) {
@@ -640,7 +669,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       ) {
         setIsSftpConnected(false);
         setTimeout(() => {
-          _attemptReconnect();
+          attemptReconnect();
         }, 250);
       }
     }
@@ -692,7 +721,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       ) {
         setIsSftpConnected(false);
         setTimeout(() => {
-          _attemptReconnect();
+          attemptReconnect();
         }, 250);
       }
       console.error(error?.message);
@@ -763,6 +792,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         return;
       }
       setLastFileVersion((prev) => ({ ...prev, [file.path]: file.content }));
+      setOpenedFiles((prev) => ({
+        ...prev,
+        [file.path]: { ...prev[file.path], state: "UNSAVED" },
+      }));
       const save = await sftp.writeFile({
         path: file.path,
         content: newContent,
@@ -774,17 +807,22 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         }
         throw new Error(save.error);
       }
-      updateItemFileContent(file.path, newContent);
+      updateFileItemAfterWrite({ path: file.path, newContent });
       setLastFileVersion((prev) => ({ ...prev, [file.path]: newContent }));
-      setFocusedFile((prev) => {
-        if (!prev) {
-          return null;
-        }
-        return {
-          ...prev,
-          content: newContent,
-        };
-      });
+      setOpenedFiles((prev) => ({
+        ...prev,
+        [file.path]: { ...prev[file.path], state: "SAVED" },
+      }));
+
+      //setFocusedFile((prev) => {
+      // if (!prev) {
+      //   return null;
+      //   }
+      //  return {
+      //    ...prev,
+      //   content: newContent,
+      //   };
+      //   });
 
       return save;
     } catch (error) {
@@ -886,6 +924,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     setLastEditTime,
     setTimeWithoutTyping,
     timeWithoutTyping,
+    attemptReconnect,
   };
 
   return (

@@ -1,8 +1,10 @@
 import ELectron from "electron";
-
+export type FileSavedState = "SAVED" | "UNSAVED";
 export type OpenedFile = {
   name: string;
   path: string;
+  content: FileContent;
+  state: FileSavedState;
 };
 
 export type FocusedFileType = {
@@ -89,6 +91,7 @@ export interface SftpApi {
     path: string;
     content: FileContent;
   }) => Promise<{ success: boolean; error: any }>;
+  cwd(): Promise<string>;
 }
 export interface DialogApi {
   showAlert: (
@@ -266,4 +269,5 @@ export interface OpenEditorContextType {
   lastEditTime: number;
   setTimeWithoutTyping: React.Dispatch<React.SetStateAction<number>>;
   timeWithoutTyping: number;
+  attemptReconnect(): Promise<void>;
 }
