@@ -6,9 +6,10 @@ import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 
 import { SftpApi, SSHApi, SshData, TerminalState } from "@/types/types";
-import { isPaste, KeyCodes, TerminalOptions } from "@/lib/utils";
+import { cn, isPaste, KeyCodes, TerminalOptions } from "@/lib/utils";
 import { useOpenEditor } from "@/hooks/useOpenEditor";
 import { toast } from "sonner";
+import { PlusIcon, Trash2 } from "lucide-react";
 
 const PROMPT = "$ ";
 
@@ -30,6 +31,9 @@ export const TerminalComponent = ({ processId }: { processId: number }) => {
     deleteTerminal,
     currentPath,
     attemptReconnect,
+    addTerm,
+    deleteTerm,
+    currentTerminalId,
   } = useOpenEditor();
   const listenersAttachedRef = useRef(false);
 
@@ -465,24 +469,38 @@ export const TerminalComponent = ({ processId }: { processId: number }) => {
           >
             Clear
           </button>
-          <span className="text-xs opacity-50">
-            {commandHistoryRef.current.length} commands
-          </span>
+
+          <div className="w-full items-center gap-2  flex ">
+            <button
+              onClick={addTerm}
+              className={cn(
+                "p-2 items-center cursor-pointer  bg-muted  rounded   px-4 py-1 flex justify-center",
+              )}
+            >
+              <PlusIcon size={12} />
+            </button>
+            <button
+              onClick={() => deleteTerm(currentTerminalId)}
+              className={cn(
+                "p-2 items-center cursor-pointer bg-destructive/20 text-destructive  rounded  px-4 py-1 flex justify-center",
+              )}
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
         </div>
       </div>
-      <div className="h-full  ">
+      <div className="h-full   ">
         <div
           ref={containerRef}
           style={{
             backgroundColor: "transparent",
             height: "100%",
           }}
-          className="h-full  max-h-full w-full bg-transparent!  "
+          className="h-full  pb-5 max-h-[98%] w-full bg-transparent!  "
           onClick={() => termRef.current?.focus()}
         />
       </div>
-
-   
     </div>
   );
 };

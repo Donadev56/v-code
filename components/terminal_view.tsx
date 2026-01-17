@@ -15,7 +15,7 @@ export const TerminalsView = ({
       {[...activeTerminalIds].map((id) => {
         const isCurrent = id === currentTerminalId;
         return (
-          <div  className={cn("hidden h-full w-full", isCurrent && "block")}>
+          <div className={cn("hidden h-full w-full", isCurrent && "block")}>
             {" "}
             <TerminalComponent key={id} processId={id} />
           </div>

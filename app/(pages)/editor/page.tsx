@@ -73,10 +73,10 @@ export default function EditorPage() {
     writeFile,
     lastEditTime,
     setLastEditTime,
+    currentTerminalId,
+    setCurrentTerminalId,
   } = useOpenEditor();
 
-
-  const [currentTerminalId, setCurrentTerminalId] = React.useState(0);
   const dialog = useEditorDialog();
 
   const updateFileContent = useDebouncedCallback(
@@ -123,43 +123,6 @@ export default function EditorPage() {
     }
   }
 
-  async function addTerm() {
-    try {
-      const result = await addConnection();
-      if (result.error) {
-        throw result.error;
-      }
-      setCurrentTerminalId(result.process.processId);
-    } catch (error) {
-      console.error(error);
-      toast.error((error as any)?.message ?? String(error));
-    }
-  }
-
-  async function deleteTerm(processId: number) {
-    try {
-      if (activeTerminalIds.length > 1) {
-        const index = activeTerminalIds.findIndex((e) => e === processId);
-        if (index !== -1) {
-          setCurrentTerminalId(activeTerminalIds[index - 1]);
-        } else {
-          setCurrentTerminalId(0);
-        }
-      } else {
-        setCurrentTerminalId(0);
-      }
-
-      const result = await deleteTerminal(processId);
-      if (result.success) {
-        console.log("Termianl deleted");
-        return;
-      }
-      throw new Error("Error while deleting terminal");
-    } catch (error) {
-      console.error(error);
-      toast.error((error as any)?.message ?? String(error));
-    }
-  }
   const openFile = async (node: NodeApi<FileItem>) => {
     try {
       const item = node.data;
@@ -264,67 +227,44 @@ export default function EditorPage() {
                 )}
               </Panel>
 
-         {  isTerminalVisible &&  
-          <Panel className="w-full h-full" minSize={"10%"}>
-                <div className="relative z-10 flex h-full   w-full flex-col gap-2 border-t bg-card/95 backdrop-blur-sm  p-4 font-mono">
-                  <div className="w-full relative h-full justify-between flex gap-2 ">
-                    <TerminalsView
-                      setCurrentTerminalId={setCurrentTerminalId}
-                      currentTerminalId={currentTerminalId}
-                    />
+              {isTerminalVisible && (
+                <Panel className="w-full h-full" minSize={"10%"}>
+                  <div className="relative z-10 flex h-full   w-full flex-col gap-2 border-t bg-card/95 backdrop-blur-sm  p-4 font-mono">
+                    <div className="w-full relative h-full justify-between flex  ">
+                      <TerminalsView
+                        setCurrentTerminalId={setCurrentTerminalId}
+                        currentTerminalId={currentTerminalId}
+                      />
+                      <div className="mx-1.5 px-0.25 rounded-full h-full bg-muted">
 
-                    <div className=" min-w-14 w-14 overflow-scroll pb-40 relative gap-3 my-4 p-4 flex max-h-[33svh]  min-h-[33svh]  justify-end bottom-5  z-10 ">
-                      <div className="flex gap-1 flex-col">
-                        {[...activeTerminalIds, -1, -2].map((id) => {
-                          const isCurrent = id === currentTerminalId;
+                      </div>
 
-                          if (id === -1) {
+                      <div className=" min-w-14 w-14 overflow-scroll pb-40 relative gap-3 my-4 p-4 flex max-h-[33svh]  min-h-[33svh]  justify-end bottom-5  z-10 ">
+                        <div className="flex gap-1 flex-col">
+                          {[...activeTerminalIds].map((id) => {
+                            const isCurrent = id === currentTerminalId;
+
                             return (
                               <div
                                 key={id}
-                                onClick={addTerm}
+                                onClick={() => setCurrentTerminalId(id)}
                                 className={cn(
-                                  "p-2 items-center fixed bg-muted bottom-15 rounded  mt-3 max-w-[40px] max-h-[40px] flex justify-center",
+                                  "p-2 items-center  max-w-[40px] max-h-[40px] flex justify-center",
+                                  isCurrent && "border-primary border",
                                 )}
                               >
-                                <PlusIcon size={20} />
+                                <IoTerminalOutline />
                               </div>
                             );
-                          }
-                          if (id === -2) {
-                            return (
-                              <div
-                                key={id}
-                                onClick={() => deleteTerm(currentTerminalId)}
-                                className={cn(
-                                  "p-2 items-center fixed bg-destructive/20 text-destructive bottom-5 rounded  mt-3 max-w-[40px] max-h-[40px] flex justify-center",
-                                )}
-                              >
-                                <Trash2 size={20} />
-                              </div>
-                            );
-                          }
+                          })}
 
-                          return (
-                            <div
-                              key={id}
-                              onClick={() => setCurrentTerminalId(id)}
-                              className={cn(
-                                "p-2 items-center  max-w-[40px] max-h-[40px] flex justify-center",
-                                isCurrent && "border-primary border",
-                              )}
-                            >
-                              <IoTerminalOutline />
-                            </div>
-                          );
-                        })}
-
-                        <div className="h-20 min-h-20  w-full "></div>
+                          <div className="h-20 min-h-20  w-full "></div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </Panel>}
+                </Panel>
+              )}
             </Group>
           </Panel>
         </Group>

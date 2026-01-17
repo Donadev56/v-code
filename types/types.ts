@@ -270,4 +270,8 @@ export interface OpenEditorContextType {
   setTimeWithoutTyping: React.Dispatch<React.SetStateAction<number>>;
   timeWithoutTyping: number;
   attemptReconnect(): Promise<void>;
+  currentTerminalId: number;
+  setCurrentTerminalId: React.Dispatch<React.SetStateAction<number>>;
+  addTerm(): Promise<void>;
+  deleteTerm(processId: number): Promise<void>;
 }

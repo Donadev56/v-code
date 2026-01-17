@@ -41,7 +41,6 @@ import { startVscodeApi } from "@/lib/vscodeApi";
 import { registerSshFsProvider } from "@/lib/sshFsProvider";
 import { startTsLanguageClient } from "@/lib/language";
 
-
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
   undefined,
 );
@@ -53,6 +52,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   const [isTerminalVisible, setIsTerminalVisible] = React.useState(false);
   const [config, setConfig] = React.useState<SSH_CONFIG | null>(null);
   const localConfigKey = "local-config-list-0.01";
+  const [currentTerminalId, setCurrentTerminalId] = React.useState(0);
 
   const [localConfig, setLocalConfig] = React.useState<{
     [x: string]: {
@@ -125,7 +125,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       registerSshFsProvider({
         readFile,
         writeFile,
-        getPathFiles
+        getPathFiles,
       });
       startTsLanguageClient(currentPath, config);
     }
@@ -885,6 +885,43 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function addTerm() {
+    try {
+      const result = await addConnection();
+      if (result.error) {
+        throw result.error;
+      }
+      setCurrentTerminalId(result.process.processId);
+    } catch (error) {
+      console.error(error);
+      toast.error((error as any)?.message ?? String(error));
+    }
+  }
+
+  async function deleteTerm(processId: number) {
+    try {
+      if (activeTerminalIds.length > 1) {
+        const index = activeTerminalIds.findIndex((e) => e === processId);
+        if (index !== -1) {
+          setCurrentTerminalId(activeTerminalIds[index - 1]);
+        } else {
+          setCurrentTerminalId(0);
+        }
+      } else {
+        setCurrentTerminalId(0);
+      }
+
+      const result = await deleteTerminal(processId);
+      if (result.success) {
+        console.log("Termianl deleted");
+        return;
+      }
+      throw new Error("Error while deleting terminal");
+    } catch (error) {
+      console.error(error);
+      toast.error((error as any)?.message ?? String(error));
+    }
+  }
   const state: OpenEditorContextType = {
     openedFiles,
     setOpenedFiles,
@@ -925,6 +962,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     setTimeWithoutTyping,
     timeWithoutTyping,
     attemptReconnect,
+    currentTerminalId,
+    setCurrentTerminalId,
+    addTerm,
+    deleteTerm,
   };
 
   return (

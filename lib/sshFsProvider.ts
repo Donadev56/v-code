@@ -6,20 +6,25 @@ import { UserRound } from "lucide-react";
 import { FileContent, FileItem } from "@/types/types";
 
 type SshFsProvider = {
-  readFile(path: string): Promise<FileContent | undefined>
-  writeFile({ file, newValue, }: {
+  readFile(path: string): Promise<FileContent | undefined>;
+  writeFile({
+    file,
+    newValue,
+  }: {
     file: {
-        path: string;
-        content: FileContent;
+      path: string;
+      content: FileContent;
     };
     newValue: string | undefined;
-}): Promise<{
-    success: boolean;
-    error: any;
-} | undefined>
-getPathFiles(path: string): Promise<Record<string, FileItem> | undefined>
-
-}
+  }): Promise<
+    | {
+        success: boolean;
+        error: any;
+      }
+    | undefined
+  >;
+  getPathFiles(path: string): Promise<Record<string, FileItem> | undefined>;
+};
 export function registerSshFsProvider(api: SshFsProvider) {
   try {
     const scheme = "ssh";
