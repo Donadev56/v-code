@@ -235,9 +235,7 @@ export default function EditorPage() {
                         setCurrentTerminalId={setCurrentTerminalId}
                         currentTerminalId={currentTerminalId}
                       />
-                      <div className="mx-1.5 px-0.25 rounded-full h-full bg-muted">
-
-                      </div>
+                      <div className="mx-1.5 px-0.25 rounded-full h-full bg-muted"></div>
 
                       <div className=" min-w-14 w-14 overflow-scroll pb-40 relative gap-3 my-4 p-4 flex max-h-[33svh]  min-h-[33svh]  justify-end bottom-5  z-10 ">
                         <div className="flex gap-1 flex-col">

@@ -81,6 +81,9 @@ class SFTPManager extends EventEmitter {
     if (!this.isConnected) throw new Error("Not connected");
     return await this.sftp.cwd();
   }
+  async exists(path) {
+    return await this.sftp.exists(path);
+  }
 
   async disconnect() {
     if (this.sftp) {

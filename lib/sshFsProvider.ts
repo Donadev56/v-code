@@ -24,6 +24,9 @@ type SshFsProvider = {
     | undefined
   >;
   getPathFiles(path: string): Promise<Record<string, FileItem> | undefined>;
+  items: {
+    [x: string]: FileItem;
+  };
 };
 export function registerSshFsProvider(api: SshFsProvider) {
   try {
@@ -64,12 +67,17 @@ export function registerSshFsProvider(api: SshFsProvider) {
             ]);
         },
 
-        stat() {
+        stat(uri: vscode.Uri): vscode.FileStat {
+          console.log({ uri });
+          const remotePath = uri.path;
+          const item = api.items[remotePath];
+          const isFolder = item.isFolder;
+
           return {
-            type: vscode.FileType.File,
-            ctime: 0,
-            mtime: Date.now(),
-            size: 0,
+            type: isFolder ? vscode.FileType.Directory : vscode.FileType.File,
+            ctime: item.data.sftpFile?.accessTime || 0,
+            mtime: item.data.sftpFile?.modifyTime || Date.now(),
+            size: item.data.sftpFile?.size || 0,
           };
         },
 

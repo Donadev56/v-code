@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld("sftpApi", {
   dispose: () => ipcRenderer.invoke("sftp:dispose"),
   list: (path) => ipcRenderer.invoke("sftp:list", path),
   cwd: () => ipcRenderer.invoke("sftp:cwd"),
+  exists: (path) => ipcRenderer.invoke("sftp:exists", path),
 
   isConnected: () => ipcRenderer.invoke("sftp:isConnected"),
   readFile: (path) => ipcRenderer.invoke("sftp:read_file", path),
@@ -39,6 +40,11 @@ contextBridge.exposeInMainWorld("sftpApi", {
   onEnd: (fn) => ipcRenderer.on("sftp:end", fn),
   onReady: (fn) => ipcRenderer.on("sftp:ready", fn),
   onError: (fn) => ipcRenderer.on("sftp:error", (_, err) => fn(err)),
+});
+
+contextBridge.exposeInMainWorld("TSConfigApi", {
+  parseSourceFileContent: (data) =>
+    ipcRenderer.invoke("tsconfig:parse_config_file_content", data),
 });
 
 contextBridge.exposeInMainWorld("windowAPI", {

@@ -37,9 +37,7 @@ import {
   onWriteFileError,
 } from "@/lib/error";
 import { useDebouncedCallback } from "use-debounce";
-import { startVscodeApi } from "@/lib/vscodeApi";
 import { registerSshFsProvider } from "@/lib/sshFsProvider";
-import { startTsLanguageClient } from "@/lib/language";
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
   undefined,
@@ -116,20 +114,17 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   }, [currentPath]);
 
   const listenerRegistered = React.useRef(false);
-  React.useEffect(() => {
-    startVscodeApi();
-  }, []);
 
-  React.useEffect(() => {
+  /* React.useEffect(() => {
     if (isSftpConnected && currentPath && config) {
       registerSshFsProvider({
         readFile,
         writeFile,
         getPathFiles,
+        items,
       });
-      startTsLanguageClient(currentPath, config);
     }
-  }, [isSftpConnected, currentPath]);
+  }, [isSftpConnected, currentPath]);*/
 
   React.useEffect(() => {
     getSavedConfigData().then((result) => {
@@ -657,7 +652,6 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         return;
       }
       const result = await sftp.readFile(path);
-      console.log({ result });
       if (result) {
         return result;
       }
@@ -922,6 +916,14 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       toast.error((error as any)?.message ?? String(error));
     }
   }
+
+  async function exists(remotePath: string) {
+    if (sftpRef.current) {
+      return sftpRef.current.exists(remotePath);
+    }
+    throw new Error("SFTP not connect");
+  }
+
   const state: OpenEditorContextType = {
     openedFiles,
     setOpenedFiles,
@@ -966,6 +968,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     setCurrentTerminalId,
     addTerm,
     deleteTerm,
+    exists,
   };
 
   return (

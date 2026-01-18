@@ -1,4 +1,6 @@
 import ELectron from "electron";
+import SftpClient from "ssh2-sftp-client";
+
 export type FileSavedState = "SAVED" | "UNSAVED";
 export type OpenedFile = {
   name: string;
@@ -13,6 +15,7 @@ export type FocusedFileType = {
   content: FileContent;
 };
 import { Terminal } from "@xterm/xterm";
+import ts from "typescript";
 
 export type FileContent = Uint8Array;
 
@@ -92,6 +95,7 @@ export interface SftpApi {
     content: FileContent;
   }) => Promise<{ success: boolean; error: any }>;
   cwd(): Promise<string>;
+  exists(remotePath: string): Promise<false | SftpClient.FileInfo>;
 }
 export interface DialogApi {
   showAlert: (
@@ -274,4 +278,17 @@ export interface OpenEditorContextType {
   setCurrentTerminalId: React.Dispatch<React.SetStateAction<number>>;
   addTerm(): Promise<void>;
   deleteTerm(processId: number): Promise<void>;
+  exists(remotePath: string): Promise<false | SftpClient.FileInfo>;
 }
+
+export type ProjectConfigContextType = {
+  setRoot: React.Dispatch<React.SetStateAction<string>>;
+  root: string;
+};
+
+export type TSConfigApi = {
+  parseSourceFileContent: (data: {
+    tsconfig: any;
+    projectRoot: string;
+  }) => Promise<ts.ParsedCommandLine>;
+};

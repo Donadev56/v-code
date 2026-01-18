@@ -7,7 +7,7 @@ const { sshManager } = require("./sshManager");
 const { sftpManager } = require("./sftpManager");
 const { keyValueStorage } = require("./keyValueStorage");
 const { dialog } = require("electron");
-
+const ts = require("typescript")
 const appServe = app.isPackaged
   ? serve({
       directory: path.join(__dirname, "../out"),
@@ -96,6 +96,9 @@ ipcMain.handle("sftp:list", async (_, path) => {
 ipcMain.handle("sftp:cwd", async () => {
   return await sftpManager.cwd();
 });
+ipcMain.handle("sftp:exists", async (_, remotePath) => {
+  return await sftpManager.exists(remotePath);
+});
 
 ipcMain.handle("sftp:write", async (_, data) => {
   try {
@@ -130,6 +133,13 @@ ipcMain.handle("storage:saveData", (event, filename, data) => {
   } catch (err) {
     return { success: false, error: err.message };
   }
+});
+ipcMain.handle("tsconfig:parse_config_file_content", async (_, data) => {
+  return ts.parseJsonSourceFileConfigFileContent(
+    data.tsconfig,
+    ts.sys,
+    data.projectRoot,
+  );
 });
 
 ipcMain.handle("storage:readData", (event, filename) => {

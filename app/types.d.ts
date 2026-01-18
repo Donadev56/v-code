@@ -6,6 +6,7 @@ declare global {
     sftpApi: SftpApi;
     electronStorage: ElectronStorage;
     dialogApi: DialogApi;
+    TSConfigApi: TSConfigApi;
   }
 }
 

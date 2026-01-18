@@ -6,6 +6,7 @@ import { OpenEditorProvider } from "@/hooks/useOpenEditor";
 import { Toaster } from "@/components/ui/sonner";
 import { EditorDialogProvider } from "@/hooks/useDialog";
 import { TerminalDialogPortal } from "@/hooks/portal";
+import { ProjectConfigProvider } from "@/hooks/use_project_config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +36,7 @@ export default function RootLayout({
         <OpenEditorProvider>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
             <EditorDialogProvider>
-              {children}
+              <ProjectConfigProvider>{children}</ProjectConfigProvider>
               <TerminalDialogPortal />
             </EditorDialogProvider>
             <Toaster />
