@@ -279,6 +279,7 @@ export interface OpenEditorContextType {
   addTerm(): Promise<void>;
   deleteTerm(processId: number): Promise<void>;
   exists(remotePath: string): Promise<false | SftpClient.FileInfo>;
+  registerFileInMonaco(filePath: string, content: string): void;
 }
 
 export type ProjectConfigContextType = {

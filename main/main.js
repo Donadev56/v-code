@@ -7,7 +7,7 @@ const { sshManager } = require("./sshManager");
 const { sftpManager } = require("./sftpManager");
 const { keyValueStorage } = require("./keyValueStorage");
 const { dialog } = require("electron");
-const ts = require("typescript")
+const ts = require("typescript");
 const appServe = app.isPackaged
   ? serve({
       directory: path.join(__dirname, "../out"),

@@ -38,6 +38,8 @@ import {
 } from "@/lib/error";
 import { useDebouncedCallback } from "use-debounce";
 import { registerSshFsProvider } from "@/lib/sshFsProvider";
+import { useMonaco } from "@monaco-editor/react";
+import { toString } from "uint8arrays/to-string";
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
   undefined,
@@ -77,6 +79,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
   const sftpRef = React.useRef<SftpApi | null>(null);
   const dialogRef = React.useRef<DialogApi | null>(null);
+  const monaco = useMonaco();
 
   const [lastFileVersion, setLastFileVersion] = React.useState<{
     [x: string]: FileContent;
@@ -635,7 +638,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
             },
           };
         });
-
+        registerFileInMonaco(
+          path,
+          data === buf || data.length === 0 ? "" : toString(data, "utf-8"),
+        );
         return data;
       }
     } catch (error) {
@@ -923,6 +929,22 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     }
     throw new Error("SFTP not connect");
   }
+  function registerFileInMonaco(filePath: string, content: string) {
+    if (!monaco) {
+      throw new Error("Monaco not found");
+    }
+    const uri = monaco.Uri.parse(
+      `ssh://${config?.user}@${config?.host}${filePath}`,
+    );
+
+    let model = monaco.editor.getModel(uri);
+
+    if (!model) {
+      model = monaco.editor.createModel(content, undefined, uri);
+    } else {
+      model.setValue(content);
+    }
+  }
 
   const state: OpenEditorContextType = {
     openedFiles,
@@ -969,6 +991,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     addTerm,
     deleteTerm,
     exists,
+    registerFileInMonaco,
   };
 
   return (
