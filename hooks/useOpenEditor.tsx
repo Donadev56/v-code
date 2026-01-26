@@ -595,6 +595,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         const parsed = ParseFile(oFilesString) as {
           [name: string]: OpenedFile;
         };
+
         setOpenedFiles((prev) => {
           if (Object.values(prev).length > 0) {
             return prev;
@@ -602,9 +603,9 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
           return parsed;
         });
 
-        // Object.values(parsed).forEach((file) => {
-        //  loadFileWithPath(file.path, path);
-        //   });
+         Object.values(parsed).forEach((file) => {
+          loadFileWithPath(file.path, path);
+         });
       }
 
       if (focusFileString) {
@@ -650,6 +651,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function registerFile (path:string, content : FileContent) {
+      registerFileInMonaco(
+        path,
+        content === buf || content.length === 0 ? "" : toString(content, "utf-8"),
+      );
+  }
+
   async function readFile(path: string) {
     try {
       const sftp = sftpRef.current;
@@ -657,10 +665,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         return;
       }
       const result = await sftp.readFile(path);
-      registerFileInMonaco(
-        path,
-        result === buf || result.length === 0 ? "" : toString(result, "utf-8"),
-      );
+      registerFile(path, result)
+    
       if (result) {
         return result;
       }
