@@ -1,12 +1,9 @@
 import Monaco, { EditorProps, useMonaco } from "@monaco-editor/react";
-import OPENCODE_THEME from "../themes/openscan.json";
 import React from "react";
-import { Uint8ArrayToString } from "@/lib/utils";
 import { GetMonacoLanguage } from "@/lib/files";
 import { buf, FileRendererType } from "@/types/types";
 import { useOpenEditor } from "@/hooks/useOpenEditor";
-import { toast } from "sonner";
-import { toString } from "uint8arrays/to-string";
+import { pathToUri } from "@/lib/utils";
 
 export const CodeEditor = ({ ...props }: EditorProps) => {
   return (
@@ -21,17 +18,31 @@ export const CodeEditorRenderer = ({
   updateFileContent,
 }: FileRendererType) => {
   const editor = useOpenEditor();
-  const path = `ssh://${editor.config?.user}@${editor.config?.host}${file.path}`;
-  console.log({ remote: path });
+  const monaco = useMonaco();
+  const uri = React.useMemo(() => {
+    return pathToUri(editor.config || ({} as any), file.path);
+  }, [editor.config, file.path]);
+
+  React.useEffect(() => {
+    debugModel();
+  }, [editor.config, file.path]);
+
+  function debugModel() {
+    if (!monaco) {
+      return;
+    }
+    console.log(
+      "Model exists?",
+      uri,
+      !!monaco.editor.getModel(monaco.Uri.parse(uri)),
+      { model:  monaco.editor.getModel(monaco.Uri.parse(uri))},
+
+    );
+  }
 
   return (
     <CodeEditor
-      value={
-        file.content === buf || file.content.length === 0
-          ? ""
-          : Uint8ArrayToString(file.content)
-      }
-      path={path} // 🔥 THIS IS ESSENTIAL
+      path={pathToUri(editor.config || ({} as any), file.path)}
       language={GetMonacoLanguage(file.name)}
       onChange={(newValue) => updateFileContent({ file, newValue })}
     />

@@ -23,6 +23,7 @@ import {
   getKeyFromConfig,
   GetPath,
   ParseFile,
+  pathToUri,
   PROMPT,
   StringifyFile,
 } from "@/lib/utils";
@@ -40,6 +41,7 @@ import { useDebouncedCallback } from "use-debounce";
 import { registerSshFsProvider } from "@/lib/sshFsProvider";
 import { useMonaco } from "@monaco-editor/react";
 import { toString } from "uint8arrays/to-string";
+import { GetMonacoLanguage } from "@/lib/files";
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
   undefined,
@@ -638,10 +640,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
             },
           };
         });
-        registerFileInMonaco(
-          path,
-          data === buf || data.length === 0 ? "" : toString(data, "utf-8"),
-        );
+
         return data;
       }
     } catch (error) {
@@ -658,6 +657,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         return;
       }
       const result = await sftp.readFile(path);
+      registerFileInMonaco(
+        path,
+        result === buf || result.length === 0 ? "" : toString(result, "utf-8"),
+      );
       if (result) {
         return result;
       }
@@ -930,20 +933,21 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     throw new Error("SFTP not connect");
   }
   function registerFileInMonaco(filePath: string, content: string) {
-    if (!monaco) {
-      throw new Error("Monaco not found");
-    }
-    const uri = monaco.Uri.parse(
-      `ssh://${config?.user}@${config?.host}${filePath}`,
-    );
+    if (!config) return;
+    if (!monaco) return;
+
+    const uri = monaco.Uri.parse(pathToUri(config, filePath));
 
     let model = monaco.editor.getModel(uri);
 
-    if (!model) {
-      model = monaco.editor.createModel(content, undefined, uri);
+    if (model) {
+      if (model.getValue() !== content) {
+        model.setValue(content);
+      }
     } else {
-      model.setValue(content);
+      monaco.editor.createModel(content, GetMonacoLanguage(filePath), uri);
     }
+    console.log("Model created");
   }
 
   const state: OpenEditorContextType = {

@@ -144,6 +144,9 @@ export function getFileRendererTypeByPath(path: string): SupportedFileType {
 
   return "text";
 }
+export function pathToUri(config: SSH_CONFIG, path: string) {
+  return `ssh://${config?.user}@${config?.host}${path}`;
+}
 export function getKeyFromConfig(config: SSH_CONFIG | LOCAL_SSH_CONFIG) {
   return `${config?.user}@${config?.host}`;
 }
