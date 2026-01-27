@@ -42,6 +42,7 @@ import { registerSshFsProvider } from "@/lib/sshFsProvider";
 import { useMonaco } from "@monaco-editor/react";
 import { toString } from "uint8arrays/to-string";
 import { GetMonacoLanguage } from "@/lib/files";
+import { useSearchParams } from "next/navigation";
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
   undefined,
@@ -71,6 +72,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [lastEditTime, setLastEditTime] = React.useState(0);
   const [timeWithoutTyping, setTimeWithoutTyping] = React.useState(0);
+  const params = useSearchParams();
 
   const updateFileItemAfterWrite = useDebouncedCallback(
     (data: { path: string; newContent: FileContent }) => {
@@ -130,6 +132,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       });
     }
   }, [isSftpConnected, currentPath]);*/
+
+  React.useEffect(() => {
+    const serverPath = params.get("path");
+    if (serverPath) {
+      openPath(serverPath);
+    }
+  }, []);
 
   React.useEffect(() => {
     getSavedConfigData().then((result) => {
@@ -558,7 +567,13 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   }
-
+  //async function openPath(path: string) {
+  // if (typeof window !== "undefined") {
+  //  window.open(
+  //   `${window.location.origin}/?path=${path}`,
+  //   );
+  //   }
+  // }
   async function openPath(path: string) {
     try {
       setIsLoading(true);
@@ -603,9 +618,9 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
           return parsed;
         });
 
-         Object.values(parsed).forEach((file) => {
+        Object.values(parsed).forEach((file) => {
           loadFileWithPath(file.path, path);
-         });
+        });
       }
 
       if (focusFileString) {
@@ -623,7 +638,6 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
   async function updateFile(path: string, silent = false) {
     try {
-      console.log({ path });
       if (!silent) {
         setIsLoading(true);
       }
@@ -651,11 +665,11 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function registerFile (path:string, content : FileContent) {
-      registerFileInMonaco(
-        path,
-        content === buf || content.length === 0 ? "" : toString(content, "utf-8"),
-      );
+  async function registerFile(path: string, content: FileContent) {
+    registerFileInMonaco(
+      path,
+      content === buf || content.length === 0 ? "" : toString(content, "utf-8"),
+    );
   }
 
   async function readFile(path: string) {
@@ -665,8 +679,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
         return;
       }
       const result = await sftp.readFile(path);
-      registerFile(path, result)
-    
+      registerFile(path, result);
+
       if (result) {
         return result;
       }
@@ -686,7 +700,6 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
   async function getPathFiles(path: string) {
     try {
-      console.log({ path });
       const sftp = sftpRef.current;
       if (!sftp) {
         return;
@@ -739,10 +752,11 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   }
 
   async function updateFolder(path: string, silent = false) {
-    const file = Object.values(items).find((e) => e.data.path === path);
+    const file = items[path] //Object.values(items).find((e) => e.data.path === path);
     if (!file?.children || file?.children?.length === 0 || !silent) {
       setIsLoading(true);
     }
+
 
     try {
       const files = await getPathFiles(path);

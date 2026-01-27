@@ -29,7 +29,7 @@ import { toast } from "sonner";
 import { TerminalButton, TerminalInput } from "@/components/editor_dialog";
 import { EnterPathDialog } from "@/components/editor_inputs";
 import { TerminalsView } from "@/components/terminal_view";
-import { NodeApi } from "react-arborist";
+import { NodeApi, RenameHandler } from "react-arborist";
 import { TranslateX, TranslateY } from "@/components/translate";
 import { Button } from "@/components/ui/button";
 import { FaMinus } from "react-icons/fa";
@@ -166,6 +166,12 @@ export default function EditorPage() {
     }
   };
 
+  async function onRename(data: { id: string; name: string }) {
+    try {
+      console.log({ data });
+    } catch (error) {}
+  }
+
   return (
     <div className="flex relative w-full flex-col items-center h-svh  ">
       <EditorTopView />
@@ -193,6 +199,7 @@ export default function EditorPage() {
                   </div>
 
                   <FileExplorer
+                    onRename={onRename}
                     onOpenDir={onOpenDir}
                     items={items}
                     onOpen={openFile}

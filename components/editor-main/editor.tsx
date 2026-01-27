@@ -35,8 +35,6 @@ export const CodeEditorRenderer = ({
       "Model exists?",
       uri,
       !!monaco.editor.getModel(monaco.Uri.parse(uri)),
-      { model:  monaco.editor.getModel(monaco.Uri.parse(uri))},
-
     );
   }
 
