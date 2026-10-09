@@ -52,8 +52,9 @@ export const EditorTopView = () => {
 
   return (
     <EditorTopBar>
-      <div className="w-full flex items-center overflow-x-scroll  max-w-[100%">
-        <div className="flex  gap-2 w-full">
+
+      <div className="w-full  justify-between z-2 flex items-center overflow-x-scroll  max-w-[100%">
+        <div className="flex left-titlebar-options  gap-2 ">
           <div className="px-2 text-[12px] text-muted-foreground py-0.5 bg-card rounded ">
             {editor.config?.user || "user"}
             {`@`}
@@ -62,7 +63,7 @@ export const EditorTopView = () => {
           {editor.isSftpConnected && (
             <div
               onClick={showEnterConfigDialog}
-              className="text-[12px] gap-2 flex items-center px-4 py-0.5 rounded  transition-all cursor-pointer  bg-green-400/20 text-green-400"
+              className="text-[12px] gap-2 z-20 flex items-center px-4 py-0.5 rounded  transition-all cursor-pointer  bg-green-400/20 text-green-400"
             >
               Connected
               <IoMdCheckmark />
@@ -83,9 +84,11 @@ export const EditorTopView = () => {
               Connect
             </div>
           )}
+            
         </div>
-        <div className="flex items-center justify-end gap-4">
-          <div></div>
+      
+        <div className="flex right-titlebar-options z-2 relative  items-center justify-end gap-4">
+          
           {topOptions.map((e) => {
             return (
               <div

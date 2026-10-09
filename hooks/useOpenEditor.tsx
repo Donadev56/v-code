@@ -42,7 +42,7 @@ import { registerSshFsProvider } from "@/lib/sshFsProvider";
 import { useMonaco } from "@monaco-editor/react";
 import { toString } from "uint8arrays/to-string";
 import { GetMonacoLanguage } from "@/lib/files";
-import { useSearchParams } from "next/navigation";
+import { NodeApi } from "react-arborist";
 
 const OpenEditorContext = createContext<OpenEditorContextType | undefined>(
   undefined,
@@ -72,7 +72,6 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [lastEditTime, setLastEditTime] = React.useState(0);
   const [timeWithoutTyping, setTimeWithoutTyping] = React.useState(0);
-  const params = useSearchParams();
 
   const updateFileItemAfterWrite = useDebouncedCallback(
     (data: { path: string; newContent: FileContent }) => {
@@ -115,6 +114,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
   const openedFileKeyBase = "local:opened:v0.06:file:for:";
   const focusFileKeyBase = "local:focus:file:v0.06:file:for:";
+  console.log({ items });
 
   const localItemsFileKey = React.useMemo(() => {
     return `local:items:file:for:${currentPath}`;
@@ -122,24 +122,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
   const listenerRegistered = React.useRef(false);
 
-  /* React.useEffect(() => {
-    if (isSftpConnected && currentPath && config) {
-      registerSshFsProvider({
-        readFile,
-        writeFile,
-        getPathFiles,
-        items,
-      });
-    }
-  }, [isSftpConnected, currentPath]);*/
-
-  React.useEffect(() => {
-    const serverPath = params.get("path");
-    if (serverPath) {
-      openPath(serverPath);
-    }
-  }, []);
-
+ 
   React.useEffect(() => {
     getSavedConfigData().then((result) => {
       if (result) {
@@ -717,11 +700,11 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
 
       if (data) {
         files["root"] = {
-          index: "root",
+          index: path,
           isFolder: true,
           children: data.map((e) => GetPath(path, e.name)),
           name: "root",
-          data: { path: "" },
+          data: { path, name: "root" },
         };
 
         for (const item of data) {
@@ -752,11 +735,10 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
   }
 
   async function updateFolder(path: string, silent = false) {
-    const file = items[path] //Object.values(items).find((e) => e.data.path === path);
+    const file = items[path]; //Object.values(items).find((e) => e.data.path === path);
     if (!file?.children || file?.children?.length === 0 || !silent) {
       setIsLoading(true);
     }
-
 
     try {
       const files = await getPathFiles(path);
@@ -774,9 +756,8 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
                 children,
               },
             };
-          } else {
-            console.log("File not found");
           }
+          console.log("File not found");
 
           return prev;
         });
@@ -970,6 +951,74 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     console.log("Model created");
   }
 
+  async function renameFile(data: {
+    id: string;
+    name: string;
+    node: NodeApi<FileItem>;
+  }) {
+    try {
+      if (!sftpRef.current) {
+        throw new Error("SFTP not initialized");
+      }
+      setIsLoading(true);
+      const path = data.node.data.data.path;
+      const segments = path.split("/").filter(Boolean);
+      segments.pop();
+      segments.push(data.name);
+      const newPath = "/" + segments.join("/");
+      const result = await sftpRef.current.rename({
+        oldPath: path,
+        newPath,
+      });
+
+      setItems((prev) => {
+        const prevItems = { ...prev };
+        const lastFile = prevItems[path];
+        const { [path]: _, ...rest } = prevItems;
+        const isRoot =
+          (data.node.parent as any).data.id ===
+          "__REACT_ARBORIST_INTERNAL_ROOT__";
+        console.log([isRoot]);
+
+        const parentPath = isRoot ? "root" :
+         data.node.parent?.data?.data?.path;
+
+        if (!parentPath) {
+          throw new Error("Parent not found");
+        }
+        const parent = items[parentPath];
+
+        const parentChildren = parent.children.filter(
+          (e) => e !== lastFile.data.path,
+        );
+        parentChildren.push(newPath);
+
+        const newFile = {
+          ...lastFile,
+          name: data.name,
+          index: newPath,
+          data: {
+            ...lastFile.data,
+            path: newPath,
+            name: data.name,
+          },
+        };
+        return {
+          ...rest,
+          [parentPath]: { ...rest[parentPath], children: parentChildren },
+          [newPath]: newFile,
+        };
+      });
+
+      return result;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   const state: OpenEditorContextType = {
     openedFiles,
     setOpenedFiles,
@@ -1016,6 +1065,7 @@ export function OpenEditorProvider({ children }: { children: ReactNode }) {
     deleteTerm,
     exists,
     registerFileInMonaco,
+    renameFile,
   };
 
   return (

@@ -19,6 +19,8 @@ app.setName("Virtual Code");
 const createWindow = () => {
   const win = new BrowserWindow({
     frame: false,
+    minWidth: 350,
+    minHeight: 350,
 
     width: 950,
     height: 750,
@@ -99,7 +101,9 @@ ipcMain.handle("sftp:cwd", async () => {
 ipcMain.handle("sftp:exists", async (_, remotePath) => {
   return await sftpManager.exists(remotePath);
 });
-
+ipcMain.handle("sftp:rename", async (_, data) => {
+  return await sftpManager.rename(data.oldPath, data.newPath);
+});
 ipcMain.handle("sftp:write", async (_, data) => {
   try {
     const result = await sftpManager.writeFile(data.path, data.content);

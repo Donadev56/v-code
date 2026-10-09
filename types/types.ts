@@ -16,6 +16,7 @@ export type FocusedFileType = {
 };
 import { Terminal } from "@xterm/xterm";
 import ts from "typescript";
+import { NodeApi } from "react-arborist";
 
 export type FileContent = Uint8Array;
 
@@ -96,6 +97,13 @@ export interface SftpApi {
   }) => Promise<{ success: boolean; error: any }>;
   cwd(): Promise<string>;
   exists(remotePath: string): Promise<false | SftpClient.FileInfo>;
+  rename({
+    oldPath,
+    newPath,
+  }: {
+    oldPath: string;
+    newPath: string;
+  }): Promise<string>;
 }
 export interface DialogApi {
   showAlert: (
@@ -280,6 +288,11 @@ export interface OpenEditorContextType {
   deleteTerm(processId: number): Promise<void>;
   exists(remotePath: string): Promise<false | SftpClient.FileInfo>;
   registerFileInMonaco(filePath: string, content: string): void;
+  renameFile(data: {
+    id: string;
+    name: string;
+    node: NodeApi<FileItem>;
+}): Promise<string>
 }
 
 export type ProjectConfigContextType = {

@@ -84,6 +84,9 @@ class SFTPManager extends EventEmitter {
   async exists(path) {
     return await this.sftp.exists(path);
   }
+    async rename(oldPath, newPath) {
+    return await this.sftp.rename(oldPath, newPath)
+  }
 
   async disconnect() {
     if (this.sftp) {

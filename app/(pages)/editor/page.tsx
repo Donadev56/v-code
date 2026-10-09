@@ -75,6 +75,7 @@ export default function EditorPage() {
     setLastEditTime,
     currentTerminalId,
     setCurrentTerminalId,
+    renameFile,
   } = useOpenEditor();
 
   const dialog = useEditorDialog();
@@ -166,10 +167,19 @@ export default function EditorPage() {
     }
   };
 
-  async function onRename(data: { id: string; name: string }) {
+  async function onRename(data: {
+    id: string;
+    name: string;
+    node: NodeApi<FileItem>;
+  }) {
     try {
-      console.log({ data });
-    } catch (error) {}
+      await renameFile(data);
+      toast.success("File renamed successfully")
+    } catch (error) {
+      toast.error("Failed to rename", {
+        description: `Failed to rename file ${data.node.data.data.path}`,
+      });
+    }
   }
 
   return (

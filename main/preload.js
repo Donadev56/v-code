@@ -31,7 +31,8 @@ contextBridge.exposeInMainWorld("sftpApi", {
   list: (path) => ipcRenderer.invoke("sftp:list", path),
   cwd: () => ipcRenderer.invoke("sftp:cwd"),
   exists: (path) => ipcRenderer.invoke("sftp:exists", path),
-
+  rename: (data) => ipcRenderer.invoke("sftp:rename", data),
+  
   isConnected: () => ipcRenderer.invoke("sftp:isConnected"),
   readFile: (path) => ipcRenderer.invoke("sftp:read_file", path),
   writeFile: (data) => ipcRenderer.invoke("sftp:write", data),

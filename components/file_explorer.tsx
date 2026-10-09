@@ -81,7 +81,10 @@ export const FileExplorer = ({
               if (node && !node.data.isFolder) {
                 onOpen(node);
               } else {
-                if (!node?.isOpen || items[node.data.data.path].children.length > 0) {
+                if (
+                  !node?.isOpen ||
+                  items[node.data.data.path].children.length > 0
+                ) {
                   return;
                 }
                 onOpenDir(node);
@@ -128,6 +131,7 @@ const EditView = ({ node, setCurrentComponentView }: NodeComponentProps) => {
   const [newName, setNewName] = React.useState(node.data.data.name);
   const [isFocus, setIsFocus] = React.useState(false);
   const [wasFocus, setWasFocus] = React.useState(false);
+  const isEditing = React.useRef(false);
 
   React.useEffect(() => {
     if (isFocus) {
@@ -141,20 +145,20 @@ const EditView = ({ node, setCurrentComponentView }: NodeComponentProps) => {
 
   async function checkAndSaveName() {
     try {
+      if (isEditing.current) {
+        return;
+      }
+      isEditing.current = true;
       if (newName?.trim() && newName !== node.data.data.name) {
-        console.log(
-          "Name has changed from ",
-          node.data.data.name,
-          " to ",
-          newName,
-        );
+        node.submit(newName);
       } else {
-        console.log("Name not changed or empty");
+        node.reset();
       }
     } catch (error) {
       console.error(error);
     } finally {
       setCurrentComponentView("default");
+      isEditing.current = false;
     }
   }
 
@@ -165,6 +169,11 @@ const EditView = ({ node, setCurrentComponentView }: NodeComponentProps) => {
         className="w-full focus:outline-0 focus:border-primary text-sm px-1.5 py-0.5 border border-primary "
         onBlur={() => setIsFocus(false)}
         onFocus={() => setIsFocus(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            checkAndSaveName();
+          }
+        }}
         value={newName}
         onChange={(e) => setNewName(e.target.value)}
         placeholder="type..."
@@ -226,45 +235,57 @@ function Node({ node, style, dragHandle }: NodeRendererProps<FileItem>) {
 
   return (
     <div
-      onKeyUp={(e) => {
-        console.log(e);
-      }}
-      onKeyDown={(e) => {
-        console.log(e.key);
-        if (e.key === "Enter") {
-          setCurrentComponentView("edit");
-        }
-      }}
       key={node.data.data.path}
       ref={dragHandle}
       onClick={() => node.toggle()}
-      style={{ ...style, width: "100%", maxWidth: "100%", paddingLeft: indent }}
-      className={cn(
-        "flex  hover:bg-muted focus:bg-primary/20 focus:border-primary justify-between cursor-pointer group",
-        isCurrent && "bg-foreground/20",
-        " focus:bg-primary/20 cursor-pointer px-2 py-0.5 focus:border-primary ",
-      )}
     >
-      <Component
-        setCurrentComponentView={setCurrentComponentView}
-        node={node}
-      />
+      <div
+        onKeyDown={(e) => {
+          console.log(e.key);
+          if (e.key === "Enter") {
+            setCurrentComponentView("edit");
+          }
+        }}
+        style={{
+          ...style,
+          width: "100%",
+          maxWidth: "100%",
+          paddingLeft: indent,
+        }}
+        className={cn(
+          "flex  hover:bg-muted focus:bg-primary/20 focus:border-primary justify-between cursor-pointer group",
+          isCurrent && "bg-foreground/20",
+          " focus:bg-primary/20 cursor-pointer px-2 py-0.5 focus:border-primary ",
+        )}
+      >
+        <Component
+          setCurrentComponentView={setCurrentComponentView}
+          node={node}
+        />
+      </div>
     </div>
   );
 }
 
-function buildTree(items: Record<string, any>, rootId = "root"): FileItem[] {
+function buildTree(
+  items: { [x: string]: FileItem },
+  rootId = "root",
+): FileItem[] {
   const root = items[rootId];
+
   return root?.children?.map((id: string) => {
     const item = items[id];
+    if (!item) {
+      return {};
+    }
     return {
       id: item.index,
       name: item.index,
       isFolder: item.isFolder,
       data: item.data,
-      children: item.isFolder ? buildTree(items, item.index) : undefined,
+      children: item.isFolder ? buildTree(items, item?.index) : undefined,
     };
-  });
+  }).filter(Boolean) as any;
 }
 
 export function NodeIcon({

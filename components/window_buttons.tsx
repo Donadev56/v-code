@@ -35,7 +35,7 @@ export const WindowButtons = () => {
     },
   ];
   return (
-    <div className="items-center group flex gap-2 justify-start">
+    <div className="items-center window-buttons group flex gap-2 justify-start">
       {leftOptions.map((e) => {
         return (
           <div
